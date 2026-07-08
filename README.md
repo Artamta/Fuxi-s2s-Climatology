@@ -233,6 +233,37 @@ python scripts/plot_fuxi_weekly_analysis.py \
   --output-dir outputs/rainfall_6week_20260617_whole_region_imdscale
 ```
 
+## Whole-Region Six-Week Temperature Maps
+
+For 2m temperature actual/anomaly maps over the full plotted region:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --products t2m_forecast,t2m_anomaly \
+  --temperature-actual-scale legacy \
+  --no-mask-to-india \
+  --output-dir outputs/temp_6week_20260617_whole_region
+```
+
+FuXi-S2S raw output has `t2m`, but no true daily `tmin`/`tmax` channels. A proxy diagnostic can be made from the current files by taking the weekly min/max across the available daily 00Z `t2m` snapshots:
+
+```bash
+python scripts/make_fuxi_t2m_00z_extremes.py \
+  --ic-date 20260617 \
+  --members 0:49 \
+  --climatology /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/climatology_fuxi17june.nc \
+  --output /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_t2m_00z_extremes_20260617.nc \
+  --workers 8
+
+python scripts/plot_fuxi_t2m_00z_extremes.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_t2m_00z_extremes_20260617.nc \
+  --no-mask-to-india \
+  --output-dir outputs/temp_6week_20260617_whole_region_00z_extremes
+```
+
+Do not present the proxy product as true Tmin/Tmax; it is min/max of one daily 00Z `t2m` value per lead day.
+
 ## Notes
 
 - Exact June 17 FuXi model forecast archives do not exist in the downloaded FuXi archive cadence, so we generate exact June 17 ICs ourselves.

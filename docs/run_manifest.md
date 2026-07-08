@@ -318,3 +318,59 @@ Strict ERPAS/IMD rainfall scale:
 Note: FuXi `tp` is clipped at zero and multiplied by `24` in the shared unit conversion before climatology, forecast, anomaly, CSV, and plots are written.
 
 The whole-region outputs use `--no-mask-to-india`; shaded values remain visible over the full plotted domain while India/state boundaries are still overlaid.
+
+## 2026-07-09: Whole-Region Six-Week Temperature Maps
+
+2m temperature actual/anomaly command:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --products t2m_forecast,t2m_anomaly \
+  --temperature-actual-scale legacy \
+  --no-mask-to-india \
+  --output-dir outputs/temp_6week_20260617_whole_region
+```
+
+Outputs:
+
+- `outputs/temp_6week_20260617_whole_region/fuxi_t2m_forecast_20260617_6week.png`
+- `outputs/temp_6week_20260617_whole_region/fuxi_t2m_anomaly_20260617_6week.png`
+
+FuXi-S2S raw channels include `t2m` but no true Tmin/Tmax channel. The following proxy product uses weekly min/max across the available daily 00Z `t2m` snapshots.
+
+Proxy analysis command:
+
+```bash
+python scripts/make_fuxi_t2m_00z_extremes.py \
+  --ic-date 20260617 \
+  --members 0:49 \
+  --climatology /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/climatology_fuxi17june.nc \
+  --output /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_t2m_00z_extremes_20260617.nc \
+  --workers 8
+```
+
+Proxy plot command:
+
+```bash
+python scripts/plot_fuxi_t2m_00z_extremes.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_t2m_00z_extremes_20260617.nc \
+  --no-mask-to-india \
+  --output-dir outputs/temp_6week_20260617_whole_region_00z_extremes
+```
+
+Proxy outputs:
+
+- `outputs/temp_6week_20260617_whole_region_00z_extremes/fuxi_t2m_00z_min_actual_20260617_6week.png`
+- `outputs/temp_6week_20260617_whole_region_00z_extremes/fuxi_t2m_00z_min_anomaly_20260617_6week.png`
+- `outputs/temp_6week_20260617_whole_region_00z_extremes/fuxi_t2m_00z_max_actual_20260617_6week.png`
+- `outputs/temp_6week_20260617_whole_region_00z_extremes/fuxi_t2m_00z_max_anomaly_20260617_6week.png`
+
+Proxy range check:
+
+- forecast `00Z t2m` weekly min: min `-8.47`, mean `22.60`, max `38.44`
+- forecast `00Z t2m` weekly max: min `-7.49`, mean `23.46`, max `38.87`
+- anomaly `00Z t2m` weekly min: min `-7.44`, mean `0.13`, max `7.09`
+- anomaly `00Z t2m` weekly max: min `-8.16`, mean `0.51`, max `7.34`
+
+Warning: the proxy product is not true daily Tmin/Tmax; it is min/max of one daily 00Z `t2m` value per lead day.
