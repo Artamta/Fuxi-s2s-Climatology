@@ -36,6 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--district-shapefile", type=Path)
     parser.add_argument("--draw-districts", action="store_true")
     parser.add_argument("--no-state-lines", action="store_true")
+    parser.add_argument("--no-mask-to-india", action="store_true", help="Shade full domain for temperature slides instead of masking to India.")
     parser.add_argument("--rainfall-scale", choices=("ppt", "fuxi"), default="ppt")
     return parser.parse_args()
 
@@ -118,7 +119,7 @@ def plot_2x2_block(
     if mask_india:
         field = np.stack([mask_to_geometries(item, grid, india_outline_geoms) for item in field], axis=0)
 
-    sub = outer.subgridspec(nrows=3, ncols=2, height_ratios=[0.12, 1, 0.09], hspace=0.22, wspace=0.13)
+    sub = outer.subgridspec(nrows=3, ncols=2, height_ratios=[0.12, 1, 0.11], hspace=0.24, wspace=0.13)
     title_ax = fig.add_subplot(sub[0, :])
     title_ax.axis("off")
     title_ax.text(0.02, 0.65, variable_title, color="#e33b3b", fontsize=9.5, fontweight="bold", ha="left")
@@ -156,7 +157,7 @@ def plot_2x2_block(
 
     cax = fig.add_subplot(sub[2, :])
     cb = fig.colorbar(mappable, cax=cax, orientation="horizontal", ticks=levels)
-    cb.ax.tick_params(labelsize=7, length=2, pad=1)
+    cb.ax.tick_params(labelsize=9, length=3, pad=2)
 
 
 def make_rainfall_slide(
@@ -231,6 +232,7 @@ def make_t2m_slide(
     draw_states: bool,
     india_outline_geoms: list,
     india_state_geoms: list,
+    mask_india: bool,
 ) -> Path:
     if product == "actual":
         title = "Predicted week wise 2m temperature actual (by FuXi-S2S)"
@@ -266,7 +268,7 @@ def make_t2m_slide(
         draw_states,
         india_outline_geoms,
         india_state_geoms,
-        mask_india=True,
+        mask_india=mask_india,
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     output = output_dir / f"fuxi_ppt_weekwise_{suffix}_{ds.attrs.get('ic_date', 'unknown')}.png"
@@ -306,6 +308,7 @@ def main() -> int:
             not args.no_state_lines,
             india_outline_geoms,
             india_state_geoms,
+            not args.no_mask_to_india,
         )
         make_t2m_slide(
             ds,
@@ -317,6 +320,7 @@ def main() -> int:
             not args.no_state_lines,
             india_outline_geoms,
             india_state_geoms,
+            not args.no_mask_to_india,
         )
     return 0
 

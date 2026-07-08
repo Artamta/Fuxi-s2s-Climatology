@@ -287,8 +287,8 @@ def plot_product(
     levels = style["levels"]
     cmap = style["cmap"]
     norm = mcolors.BoundaryNorm(levels, cmap.N)
-    fig = plt.figure(figsize=(8.0, 11.2), facecolor="white")
-    gs = fig.add_gridspec(nrows=4, ncols=2, height_ratios=[1, 1, 1, 0.075], hspace=0.32, wspace=0.15)
+    fig = plt.figure(figsize=(8.4, 11.4), facecolor="white")
+    gs = fig.add_gridspec(nrows=4, ncols=2, height_ratios=[1, 1, 1, 0.09], hspace=0.34, wspace=0.15)
     fig.text(0.04, 0.965, f"{style['title']}  IC={ic_date}", color="#e33b3b", fontsize=14, fontweight="bold", ha="left")
     fig.text(0.5, 0.935, "FuXi-S2S ensemble mean | June-17 model climatology", color="#0026cc", fontsize=10.5, ha="center", fontweight="bold")
 
@@ -316,7 +316,7 @@ def plot_product(
 
     cax = fig.add_subplot(gs[3, :])
     cb = fig.colorbar(mappable, cax=cax, orientation="horizontal", ticks=levels)
-    cb.ax.tick_params(labelsize=8, length=3)
+    cb.ax.tick_params(labelsize=10, length=4, pad=3)
     output_dir.mkdir(parents=True, exist_ok=True)
     output = output_dir / f"fuxi_{style['suffix']}_{ic_date}_6week.png"
     fig.savefig(output, dpi=dpi, bbox_inches="tight")

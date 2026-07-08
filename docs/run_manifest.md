@@ -248,6 +248,21 @@ PPT-ready outputs:
 - `outputs/ppt_ready_20260617/fuxi_ppt_weekwise_t2m_anomaly_20260617.png`
 - `outputs/ppt_ready_20260617_readable/fuxi_ppt_weekwise_rainfall_fuxiscale_20260617.png`
 
+Whole-region PPT-ready command:
+
+```bash
+python scripts/plot_fuxi_ppt_weekly.py \
+  --analysis-file /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --no-mask-to-india \
+  --output-dir outputs/ppt_ready_20260617_whole_region
+```
+
+Whole-region PPT-ready outputs:
+
+- `outputs/ppt_ready_20260617_whole_region/fuxi_ppt_weekwise_rainfall_20260617.png`
+- `outputs/ppt_ready_20260617_whole_region/fuxi_ppt_weekwise_t2m_actual_20260617.png`
+- `outputs/ppt_ready_20260617_whole_region/fuxi_ppt_weekwise_t2m_anomaly_20260617.png`
+
 Quick summary CSV:
 
 `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_summary_20260617.csv`
@@ -275,12 +290,25 @@ python scripts/plot_fuxi_weekly_analysis.py \
   --output-dir outputs/rainfall_6week_20260617_imdscale
 ```
 
+Whole-region strict IMD-scale command:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --products tp_actual,tp_anomaly \
+  --rainfall-scale imd \
+  --no-mask-to-india \
+  --output-dir outputs/rainfall_6week_20260617_whole_region_imdscale
+```
+
 Outputs:
 
 - `outputs/rainfall_6week_20260617_readable/fuxi_tp_actual_20260617_6week.png`
 - `outputs/rainfall_6week_20260617_readable/fuxi_tp_anomaly_20260617_6week.png`
 - `outputs/rainfall_6week_20260617_imdscale/fuxi_tp_actual_20260617_6week.png`
 - `outputs/rainfall_6week_20260617_imdscale/fuxi_tp_anomaly_20260617_6week.png`
+- `outputs/rainfall_6week_20260617_whole_region_imdscale/fuxi_tp_actual_20260617_6week.png`
+- `outputs/rainfall_6week_20260617_whole_region_imdscale/fuxi_tp_anomaly_20260617_6week.png`
 
 Strict ERPAS/IMD rainfall scale:
 
@@ -288,3 +316,5 @@ Strict ERPAS/IMD rainfall scale:
 - anomaly: `-20,-15,-10,-5,-2,2,5,10,15,20`
 
 Note: FuXi `tp` is clipped at zero and multiplied by `24` in the shared unit conversion before climatology, forecast, anomaly, CSV, and plots are written.
+
+The whole-region outputs use `--no-mask-to-india`; shaded values remain visible over the full plotted domain while India/state boundaries are still overlaid.

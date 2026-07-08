@@ -192,6 +192,15 @@ For quick numeric checking, a compact weekly summary CSV was written to:
 
 `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_summary_20260617.csv`
 
+For whole-region PPT-ready slides, keep the same rainfall slide layout and do not mask temperature fields to India:
+
+```bash
+python scripts/plot_fuxi_ppt_weekly.py \
+  --analysis-file /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --no-mask-to-india \
+  --output-dir outputs/ppt_ready_20260617_whole_region
+```
+
 ## Separate Six-Week Rainfall Maps
 
 For separate actual-rainfall and rainfall-anomaly figures through week 6:
@@ -211,6 +220,17 @@ python scripts/plot_fuxi_weekly_analysis.py \
   --products tp_actual,tp_anomaly \
   --rainfall-scale imd \
   --output-dir outputs/rainfall_6week_20260617_imdscale
+```
+
+Whole-region strict IMD-scale version, without clipping the shaded field to India:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --products tp_actual,tp_anomaly \
+  --rainfall-scale imd \
+  --no-mask-to-india \
+  --output-dir outputs/rainfall_6week_20260617_whole_region_imdscale
 ```
 
 ## Notes
