@@ -1,0 +1,25 @@
+# Generated FuXi inputs, forecasts, climatologies, plots, and logs.
+data/
+outputs/
+logs/
+
+# Large scientific data products.
+*.nc
+*.nc.tmp
+*.zarr/
+*.grib
+*.grib2
+*.7z
+
+# Python/runtime noise.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local secrets/config.
+.env
+.env.*
+
