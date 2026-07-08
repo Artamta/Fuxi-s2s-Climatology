@@ -114,3 +114,73 @@ Full ensemble estimate:
 The repository is on `/home`, which is almost full, so full forecast output must stay under `/storage`.
 
 Note: array job `65459` was a control-only launch and was canceled after confirming the workflow, because the climatology target was changed to 11 members.
+
+## 2026-07-09: June 17 Model Climatology And 20260617 Analysis
+
+Verified completed June-17 hindcast output:
+
+- dates: `20/20` present for `2002-2021`
+- members: `00-10`
+- lead files: `42/42` for every member-year
+- complete member-years: `220/220`
+
+Reusable climatology command:
+
+```bash
+python scripts/build_june17_climatology.py \
+  --years 2002:2021 \
+  --members 0:10 \
+  --variables tp,t2m \
+  --output /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/climatology_fuxi17june.nc \
+  --workers 8
+```
+
+Output:
+
+`/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/climatology_fuxi17june.nc`
+
+Dimensions:
+
+`variable=2, lead_day=42, week=6, lat=22, lon=21`
+
+20260617 ensemble analysis command:
+
+```bash
+python scripts/make_fuxi_weekly_analysis.py \
+  --ic-date 20260617 \
+  --members 0:49 \
+  --variables tp,t2m \
+  --climatology /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/climatology_fuxi17june.nc \
+  --output /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --workers 8
+```
+
+Output:
+
+`/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc`
+
+Quick range check:
+
+- climatology `tp`: min `0.0048`, mean `0.1049`, max `0.4578`
+- climatology `t2m`: min `-8.82`, mean `22.72`, max `34.41`
+- forecast `tp`: min `0.0003`, mean `0.2594`, max `1.8954`
+- anomaly `tp`: min `-0.1287`, mean `0.1545`, max `1.6875`
+- forecast `t2m`: min `-8.00`, mean `23.05`, max `38.60`
+- anomaly `t2m`: min `-7.79`, mean `0.34`, max `7.10`
+
+Plot command:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --output-dir outputs/weekly_analysis_20260617
+```
+
+Plots:
+
+- `outputs/weekly_analysis_20260617/fuxi_tp_forecast_20260617_6week.png`
+- `outputs/weekly_analysis_20260617/fuxi_tp_anomaly_20260617_6week.png`
+- `outputs/weekly_analysis_20260617/fuxi_t2m_forecast_20260617_6week.png`
+- `outputs/weekly_analysis_20260617/fuxi_t2m_anomaly_20260617_6week.png`
+
+Note: FuXi output contains `t2m` and `tp`; no true Tmin/Tmax channel exists in these files.

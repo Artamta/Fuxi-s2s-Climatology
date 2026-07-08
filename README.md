@@ -107,6 +107,54 @@ The plotter creates six weekly panels, masks to India by default, and uses the l
 
 Use `--draw-districts` only when a dense district-boundary plot is needed.
 
+## Step 3: Build Climatology And Anomalies
+
+Build the reusable June-17 FuXi model climatology:
+
+```bash
+python scripts/build_june17_climatology.py \
+  --years 2002:2021 \
+  --members 0:10 \
+  --variables tp,t2m \
+  --output /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/climatology_fuxi17june.nc \
+  --workers 8
+```
+
+Create the 20260617 ensemble forecast/anomaly product:
+
+```bash
+python scripts/make_fuxi_weekly_analysis.py \
+  --ic-date 20260617 \
+  --members 0:49 \
+  --variables tp,t2m \
+  --climatology /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/climatology_fuxi17june.nc \
+  --output /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --workers 8
+```
+
+Plot the four six-week India maps:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --output-dir outputs/weekly_analysis_20260617
+```
+
+Outputs:
+
+- `fuxi_tp_forecast_20260617_6week.png`
+- `fuxi_tp_anomaly_20260617_6week.png`
+- `fuxi_t2m_forecast_20260617_6week.png`
+- `fuxi_t2m_anomaly_20260617_6week.png`
+
+The rainfall plot defaults to a FuXi-readable rainfall scale because the 20260617 FuXi ensemble rain values are much smaller than the strict IMD 1-40 mm/day scale. For exact IMD-style rainfall levels, add:
+
+```bash
+--rainfall-scale imd
+```
+
+Note: these FuXi forecast files contain `t2m` and `tp`; they do not contain true daily Tmin/Tmax channels. The current temperature maps are therefore `t2m` actual and `t2m` anomaly, not Tmin/Tmax.
+
 ## Notes
 
 - Exact June 17 FuXi model forecast archives do not exist in the downloaded FuXi archive cadence, so we generate exact June 17 ICs ourselves.
