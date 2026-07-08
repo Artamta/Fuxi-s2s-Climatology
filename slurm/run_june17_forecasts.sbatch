@@ -17,7 +17,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64G
 #SBATCH --time=04:00:00
-#SBATCH --array=1-20%4
+#SBATCH --array=1-20%1
 #SBATCH --output=/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/logs/fuxi_june17_%A_%a.out
 #SBATCH --error=/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/logs/fuxi_june17_%A_%a.err
 
@@ -26,6 +26,7 @@ set -euo pipefail
 REPO="/home/raj.ayush/s2s/fuxi_s2s_Hindcast"
 FUXI_DIR="/home/raj.ayush/s2s/s2s_anlysis/analysis-code/data-download/fuxi_s2s/FuXi-S2S"
 FUXI_PY="/home/raj.ayush/.conda/envs/fuxi_s2s/bin/python"
+CHECK_PY="${FUXI_CHECK_PY:-python}"
 
 DATES_FILE="${FUXI_DATES_FILE:-${REPO}/config/june17_dates_2002_2021.txt}"
 INPUT_ROOT="${FUXI_INPUT_ROOT:-${REPO}/data/ic_inputs}"
@@ -69,12 +70,13 @@ echo "Input     : ${INPUT_FILE}"
 echo "Members   : ${MEMBERS}"
 echo "Steps     : ${STEPS}"
 echo "Raw dir   : ${RAW_DIR}"
+echo "CUDA devs : ${CUDA_VISIBLE_DEVICES:-unset}"
 echo "Start     : $(date)"
 echo "============================================================"
 
 if [[ -d "${RAW_DIR}" && "${OVERWRITE}" != "1" ]]; then
   cd "${REPO}"
-  if "${FUXI_PY}" scripts/check_smoke_output.py \
+  if "${CHECK_PY}" scripts/check_smoke_output.py \
       --raw-dir "${RAW_DIR}" \
       --members "${MEMBERS}" \
       --steps "${STEPS}"; then
@@ -98,7 +100,7 @@ cd "${FUXI_DIR}"
   --save_dir "${RAW_DIR}"
 
 cd "${REPO}"
-"${FUXI_PY}" scripts/check_smoke_output.py \
+"${CHECK_PY}" scripts/check_smoke_output.py \
   --raw-dir "${RAW_DIR}" \
   --members "${MEMBERS}" \
   --steps "${STEPS}"
