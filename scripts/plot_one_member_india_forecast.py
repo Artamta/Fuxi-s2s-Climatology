@@ -20,12 +20,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from cartopy.mpl.ticker import LatitudeFormatter, LongitudeFormatter
 from netCDF4 import Dataset
+from pyproj import CRS, Transformer
 from shapely import contains_xy
-from shapely.ops import unary_union
+from shapely.ops import transform, unary_union
 
 
-WEEKS = ((1, 7), (8, 14), (15, 21), (22, 28))
+WEEKS = ((1, 7), (8, 14), (15, 21), (22, 28), (29, 35), (36, 42))
 DEFAULT_BBOX = (66.5, 98.5, 5.0, 38.5)  # lon_min, lon_max, lat_min, lat_max
+DEFAULT_STATE_SHAPEFILE = Path("/storage/raj.ayush/archive/s2s-forecast-/STATE_BOUNDARY.shp")
+DEFAULT_DISTRICT_SHAPEFILE = Path("/storage/raj.ayush/archive/s2s-forecast-/DISTRICT_BOUNDARY.shp")
 KNOWN_RAW_ROOTS = (
     Path("/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/raw"),
     Path("/storage/raj.ayush/All_Model_Data/fuxi/test/raw"),
@@ -53,6 +56,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--map-scale", default="50m", choices=("10m", "50m", "110m"))
     parser.add_argument("--no-state-lines", action="store_true")
     parser.add_argument("--india-shapefile", type=Path, help="Optional India/states shapefile to draw and mask against.")
+    parser.add_argument("--district-shapefile", type=Path, help="Optional district shapefile for internal boundaries.")
+    parser.add_argument("--draw-districts", action="store_true")
     parser.add_argument("--no-mask-to-india", action="store_true", help="Shade full domain instead of only India.")
     parser.add_argument("--tp-scale", type=float, default=1.0, help="Optional multiplier for tp. Default leaves FuXi units unchanged.")
     return parser.parse_args()
@@ -84,7 +89,17 @@ def read_shapefile_geometries(path: Path) -> list:
     if not path.exists():
         raise SystemExit(f"shapefile not found: {path}")
     reader = shpreader.Reader(str(path))
-    return list(reader.geometries())
+    geoms = list(reader.geometries())
+    prj = path.with_suffix(".prj")
+    if not prj.exists():
+        return geoms
+
+    source_crs = CRS.from_wkt(prj.read_text())
+    if source_crs.is_geographic:
+        return geoms
+
+    transformer = Transformer.from_crs(source_crs, CRS.from_epsg(4326), always_xy=True)
+    return [transform(transformer.transform, geom) for geom in geoms]
 
 
 def natural_earth_india_geometries(map_scale: str) -> tuple[list, list]:
@@ -117,10 +132,25 @@ def natural_earth_india_geometries(map_scale: str) -> tuple[list, list]:
     return country_geoms, state_geoms
 
 
-def prepare_india_geometries(map_scale: str, india_shapefile: Path | None) -> tuple[list, list]:
-    if india_shapefile is not None:
-        geoms = read_shapefile_geometries(india_shapefile)
-        return geoms, geoms
+def prepare_india_geometries(
+    map_scale: str,
+    india_shapefile: Path | None,
+    district_shapefile: Path | None,
+    draw_districts: bool,
+) -> tuple[list, list]:
+    boundary_path = india_shapefile
+    if boundary_path is None and DEFAULT_STATE_SHAPEFILE.exists():
+        boundary_path = DEFAULT_STATE_SHAPEFILE
+    if boundary_path is not None:
+        state_geoms = read_shapefile_geometries(boundary_path)
+        outline_geoms = [unary_union(state_geoms)]
+        if draw_districts:
+            district_path = district_shapefile
+            if district_path is None and DEFAULT_DISTRICT_SHAPEFILE.exists():
+                district_path = DEFAULT_DISTRICT_SHAPEFILE
+            if district_path is not None:
+                return outline_geoms, read_shapefile_geometries(district_path)
+        return outline_geoms, state_geoms
     return natural_earth_india_geometries(map_scale)
 
 
@@ -191,7 +221,7 @@ def add_map(
 ) -> None:
     lon_min, lon_max, lat_min, lat_max = bbox
     ax.set_extent([lon_min, lon_max, lat_min, lat_max], crs=ccrs.PlateCarree())
-    ax.coastlines(map_scale, linewidth=0.8)
+    ax.coastlines(map_scale, linewidth=0.8, zorder=4)
     ax.add_feature(cfeature.BORDERS.with_scale(map_scale), linewidth=0.55, edgecolor="0.35")
     if india_outline_geoms:
         ax.add_geometries(
@@ -208,8 +238,8 @@ def add_map(
                 india_state_geoms,
                 crs=ccrs.PlateCarree(),
                 facecolor="none",
-                edgecolor="0.20",
-                linewidth=0.32,
+                edgecolor="0.10",
+                linewidth=0.28,
                 alpha=0.8,
                 zorder=7,
             )
@@ -218,6 +248,9 @@ def add_map(
     ax.xaxis.set_major_formatter(LongitudeFormatter(number_format=".0f"))
     ax.yaxis.set_major_formatter(LatitudeFormatter(number_format=".0f"))
     ax.tick_params(labelsize=9, length=3, pad=1)
+    for spine in ax.spines.values():
+        spine.set_linewidth(1.2)
+        spine.set_edgecolor("black")
 
 
 def variable_style(variable: str) -> tuple[str, str, np.ndarray, mcolors.Colormap, str]:
@@ -267,14 +300,14 @@ def plot_variable(
             field = mask_to_geometries(field, grid, india_outline_geoms)
         fields.append(field)
 
-    fig = plt.figure(figsize=(7.8, 8.9), facecolor="white")
-    gs = fig.add_gridspec(nrows=3, ncols=2, height_ratios=[1, 1, 0.08], hspace=0.28, wspace=0.13)
+    fig = plt.figure(figsize=(8.0, 11.2), facecolor="white")
+    gs = fig.add_gridspec(nrows=4, ncols=2, height_ratios=[1, 1, 1, 0.075], hspace=0.32, wspace=0.15)
     fig.text(0.04, 0.965, f"{title}  IC={ic_date}", color="#e33b3b", fontsize=14, fontweight="bold", ha="left")
-    fig.text(0.5, 0.93, f"FuXi-S2S member {member:02d} | weekly mean", color="#0026cc", fontsize=11, ha="center", fontweight="bold")
+    fig.text(0.5, 0.935, f"FuXi-S2S member {member:02d} | weekly mean", color="#0026cc", fontsize=11, ha="center", fontweight="bold")
 
     mappable = None
     for idx, field in enumerate(fields, start=1):
-        row = 0 if idx <= 2 else 1
+        row = (idx - 1) // 2
         col = (idx - 1) % 2
         ax = fig.add_subplot(gs[row, col], projection=ccrs.PlateCarree())
         mappable = ax.contourf(
@@ -290,12 +323,12 @@ def plot_variable(
         add_map(ax, bbox, map_scale, draw_states, india_outline_geoms, india_state_geoms)
         ax.set_title(week_label(init, idx, WEEKS[idx - 1]), fontsize=10, color="#0a41ff", pad=4, fontweight="bold")
 
-    cax = fig.add_subplot(gs[2, :])
+    cax = fig.add_subplot(gs[3, :])
     cb = fig.colorbar(mappable, cax=cax, orientation="horizontal", ticks=levels)
     cb.ax.tick_params(labelsize=8, length=3)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    output = output_dir / f"fuxi_{suffix}_member{member:02d}_{ic_date}_india_weekly.png"
+    output = output_dir / f"fuxi_{suffix}_member{member:02d}_{ic_date}_india_weekly_6panel.png"
     fig.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {output}")
@@ -307,7 +340,12 @@ def main() -> int:
     raw_dir = find_raw_dir(args.ic_date, args.raw_dir)
     ic_date = args.ic_date or raw_dir.name
     variables = [item.strip() for item in args.variables.split(",") if item.strip()]
-    india_outline_geoms, india_state_geoms = prepare_india_geometries(args.map_scale, args.india_shapefile)
+    india_outline_geoms, india_state_geoms = prepare_india_geometries(
+        args.map_scale,
+        args.india_shapefile,
+        args.district_shapefile,
+        args.draw_districts,
+    )
     print(f"raw dir : {raw_dir}")
     print(f"ic date : {ic_date}")
     print(f"member  : {args.member:02d}")

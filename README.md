@@ -89,6 +89,24 @@ Approximate output volume for all 20 years:
 
 For IMD-style model-climatology anomaly maps, use the same ensemble treatment for the forecast and climatology. The practical first target here is the 11-member ensemble mean; 50 members can be added later if ensemble spread/probability products or smoother ensemble statistics are needed.
 
+## Quick One-Member India Plots
+
+For a fast IMD-style check from one existing member:
+
+```bash
+python scripts/plot_one_member_india_forecast.py \
+  --ic-date 20260617 \
+  --member 0 \
+  --variables tp,t2m \
+  --output-dir outputs/quick_plots_imd6
+```
+
+The plotter creates six weekly panels, masks to India by default, and uses the local state boundary shapefile when available:
+
+`/storage/raj.ayush/archive/s2s-forecast-/STATE_BOUNDARY.shp`
+
+Use `--draw-districts` only when a dense district-boundary plot is needed.
+
 ## Notes
 
 - Exact June 17 FuXi model forecast archives do not exist in the downloaded FuXi archive cadence, so we generate exact June 17 ICs ourselves.
