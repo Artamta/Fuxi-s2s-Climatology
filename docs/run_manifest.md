@@ -206,3 +206,45 @@ IMD colorbar sampling source:
 - sampled assets: `rfactual_MME2026070100.png`, `rfanom_MME2026070100.png`, `tmaxactual_MME2026070100.png`, `tminactual_MME2026070100.png`, `tmaxanom_MME2026070100.png`, `tminanom_MME2026070100.png`
 
 Note: FuXi output contains `t2m` and `tp`; no true Tmin/Tmax channel exists in these files.
+
+## 2026-07-09: PPT-Ready ERPAS Subset
+
+Reference PDF:
+
+`imd-ppt/ERPAS_Real-Time_Forecast_20260617 - Google Slides.pdf`
+
+Relevant PDF slides:
+
+- slide 6: `Predicted week wise rainfall (by MPME)`
+- slide 14: `Predicted week wise temperature actual (by MPME)`
+- slide 15: `Predicted week wise temperature anomaly (by MPME)`
+
+PPT-ready command:
+
+```bash
+python scripts/plot_fuxi_ppt_weekly.py \
+  --analysis-file /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --output-dir outputs/ppt_ready_20260617
+```
+
+Readable-rainfall command:
+
+```bash
+python scripts/plot_fuxi_ppt_weekly.py \
+  --analysis-file /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --rainfall-scale fuxi \
+  --output-dir outputs/ppt_ready_20260617_readable
+```
+
+PPT-ready outputs:
+
+- `outputs/ppt_ready_20260617/fuxi_ppt_weekwise_rainfall_20260617.png`
+- `outputs/ppt_ready_20260617/fuxi_ppt_weekwise_t2m_actual_20260617.png`
+- `outputs/ppt_ready_20260617/fuxi_ppt_weekwise_t2m_anomaly_20260617.png`
+- `outputs/ppt_ready_20260617_readable/fuxi_ppt_weekwise_rainfall_fuxiscale_20260617.png`
+
+Quick summary CSV:
+
+`/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_summary_20260617.csv`
+
+The CSV is only for quick spatial min/mean/max checking. Gridded forecast, climatology, and anomaly fields are stored in NetCDF.

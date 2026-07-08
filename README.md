@@ -163,6 +163,35 @@ The IMD colorbar colors were sampled from the current ERPAS image assets linked 
 
 Note: these FuXi forecast files contain `t2m` and `tp`; they do not contain true daily Tmin/Tmax channels. The current temperature maps are therefore `t2m` actual and `t2m` anomaly, not Tmin/Tmax.
 
+## PPT-Ready Four-Week Slides
+
+To match the uploaded ERPAS Google Slides/PDF layout for the selected week-wise products:
+
+```bash
+python scripts/plot_fuxi_ppt_weekly.py \
+  --analysis-file /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --output-dir outputs/ppt_ready_20260617
+```
+
+This writes:
+
+- `fuxi_ppt_weekwise_rainfall_20260617.png`
+- `fuxi_ppt_weekwise_t2m_actual_20260617.png`
+- `fuxi_ppt_weekwise_t2m_anomaly_20260617.png`
+
+The rainfall slide above uses the ERPAS/PPT rainfall thresholds. Because FuXi rainfall is much smaller, a presentation-readable rainfall version can also be made:
+
+```bash
+python scripts/plot_fuxi_ppt_weekly.py \
+  --analysis-file /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --rainfall-scale fuxi \
+  --output-dir outputs/ppt_ready_20260617_readable
+```
+
+For quick numeric checking, a compact weekly summary CSV was written to:
+
+`/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_summary_20260617.csv`
+
 ## Notes
 
 - Exact June 17 FuXi model forecast archives do not exist in the downloaded FuXi archive cadence, so we generate exact June 17 ICs ourselves.
