@@ -76,16 +76,28 @@ mkdir -p /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/logs
 sbatch slurm/run_june17_forecasts.sbatch
 ```
 
-Default planned run:
+Recommended climatology run:
 
 - dates: all `20` June 17 ICs from `2002-2021`
-- members: `1`
+- members: `11`
 - steps: `42`
 - partition: `GPU-AI_prio`
 - output root: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/raw/YYYY0617`
+- expected files: `9,240`
+- expected storage: about `76 GiB`
+- expected runtime after scheduling: roughly `1-2 h` for the serial array, depending on GPU and filesystem speed
+
+Control-only diagnostic option:
+
+```bash
+FUXI_MEMBERS=1 sbatch slurm/run_june17_forecasts.sbatch
+```
+
+Control-only estimate:
+
 - expected files: `840`
 - expected storage: about `7 GiB`
-- expected runtime after scheduling: roughly `5-15 min` for the array, depending on GPU availability
+- expected runtime after scheduling: roughly `5-15 min`
 
 Full ensemble option:
 
@@ -100,3 +112,5 @@ Full ensemble estimate:
 - expected runtime after scheduling: roughly `1-4 h`, depending on GPU concurrency and filesystem speed
 
 The repository is on `/home`, which is almost full, so full forecast output must stay under `/storage`.
+
+Note: array job `65459` was a control-only launch and was canceled after confirming the workflow, because the climatology target was changed to 11 members.

@@ -1,10 +1,13 @@
 #!/bin/bash
 # Run FuXi-S2S forecasts for the configured June 17 hindcast dates.
 #
-# Default is the control-only climatology run:
-#   all 20 dates x 42 lead steps x 1 member
+# Default is the recommended initial climatology run:
+#   all 20 dates x 42 lead steps x 11 members
 #
-# For the full ensemble, submit with:
+# For a control-only diagnostic, submit with:
+#   FUXI_MEMBERS=1 sbatch slurm/run_june17_forecasts.sbatch
+#
+# For the larger full ensemble, submit with:
 #   FUXI_MEMBERS=50 sbatch slurm/run_june17_forecasts.sbatch
 #
 # Forecast NetCDF outputs are written to /storage by default because /home is
@@ -34,7 +37,7 @@ OUTPUT_ROOT="${FUXI_OUTPUT_ROOT:-/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/ju
 
 TASK_ID="${SLURM_ARRAY_TASK_ID:-1}"
 DATE="$(sed -n "${TASK_ID}p" "${DATES_FILE}" | tr -d '[:space:]')"
-MEMBERS="${FUXI_MEMBERS:-1}"
+MEMBERS="${FUXI_MEMBERS:-11}"
 STEPS="${FUXI_STEPS:-42}"
 SEED="${FUXI_SEED:-42}"
 OVERWRITE="${FUXI_OVERWRITE:-0}"

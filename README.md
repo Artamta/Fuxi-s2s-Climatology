@@ -61,13 +61,19 @@ mkdir -p /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/logs
 sbatch slurm/run_june17_forecasts.sbatch
 ```
 
-Default run:
+Default recommended climatology run:
 
 - years: `2002-2021`
 - lead steps: `42`
-- members: `1` control member
+- members: `11`
 - partition: `GPU-AI_prio`
 - output root: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/raw/YYYY0617`
+
+For a control-only diagnostic:
+
+```bash
+FUXI_MEMBERS=1 sbatch slurm/run_june17_forecasts.sbatch
+```
 
 For the full 50-member ensemble:
 
@@ -78,8 +84,10 @@ FUXI_MEMBERS=50 sbatch slurm/run_june17_forecasts.sbatch
 Approximate output volume for all 20 years:
 
 - `1` member: about `7 GiB`
-- `10` members: about `69 GiB`
+- `11` members: about `76 GiB`
 - `50` members: about `346 GiB`
+
+For IMD-style model-climatology anomaly maps, use the same ensemble treatment for the forecast and climatology. The practical first target here is the 11-member ensemble mean; 50 members can be added later if ensemble spread/probability products or smoother ensemble statistics are needed.
 
 ## Notes
 
