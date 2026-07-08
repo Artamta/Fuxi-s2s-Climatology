@@ -176,11 +176,33 @@ python scripts/plot_fuxi_weekly_analysis.py \
   --output-dir outputs/weekly_analysis_20260617
 ```
 
+Strict IMD-scale plot command:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --rainfall-scale imd \
+  --temperature-actual-scale tmax \
+  --output-dir outputs/weekly_analysis_20260617_imdscale
+```
+
 Plots:
 
 - `outputs/weekly_analysis_20260617/fuxi_tp_forecast_20260617_6week.png`
 - `outputs/weekly_analysis_20260617/fuxi_tp_anomaly_20260617_6week.png`
 - `outputs/weekly_analysis_20260617/fuxi_t2m_forecast_20260617_6week.png`
 - `outputs/weekly_analysis_20260617/fuxi_t2m_anomaly_20260617_6week.png`
+
+Strict IMD-scale plots:
+
+- `outputs/weekly_analysis_20260617_imdscale/fuxi_tp_forecast_20260617_6week.png`
+- `outputs/weekly_analysis_20260617_imdscale/fuxi_tp_anomaly_20260617_6week.png`
+- `outputs/weekly_analysis_20260617_imdscale/fuxi_t2m_forecast_20260617_6week.png`
+- `outputs/weekly_analysis_20260617_imdscale/fuxi_t2m_anomaly_20260617_6week.png`
+
+IMD colorbar sampling source:
+
+- page: `https://mausam.imd.gov.in/responsive/extendedRangeForecast.php`
+- sampled assets: `rfactual_MME2026070100.png`, `rfanom_MME2026070100.png`, `tmaxactual_MME2026070100.png`, `tminactual_MME2026070100.png`, `tmaxanom_MME2026070100.png`, `tminanom_MME2026070100.png`
 
 Note: FuXi output contains `t2m` and `tp`; no true Tmin/Tmax channel exists in these files.

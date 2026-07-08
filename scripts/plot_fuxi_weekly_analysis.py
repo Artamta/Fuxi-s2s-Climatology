@@ -43,6 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-state-lines", action="store_true")
     parser.add_argument("--no-mask-to-india", action="store_true")
     parser.add_argument("--rainfall-scale", choices=("fuxi", "imd"), default="fuxi")
+    parser.add_argument("--temperature-actual-scale", choices=("tmax", "tmin", "legacy"), default="tmax")
     return parser.parse_args()
 
 
@@ -52,37 +53,126 @@ def week_label(init: datetime, week_index: int, start_day: int, end_day: int) ->
     return f"(Week{week_index}: 00Z{start:%d%b}-00Z{end:%d%b})"
 
 
+def listed_cmap(name: str, colors: list[str], under: str | None = None, over: str | None = None) -> mcolors.Colormap:
+    cmap = mcolors.ListedColormap(colors, name=name)
+    if under is not None:
+        cmap.set_under(under)
+    if over is not None:
+        cmap.set_over(over)
+    return cmap
+
+
 def imd_green_cmap(ncolors: int) -> mcolors.Colormap:
     cmap = mcolors.LinearSegmentedColormap.from_list(
         "imd_rainfall",
-        ["#ffffff", "#72f88b", "#20d83c", "#04aa18", "#00790a", "#004500"],
+        ["#8affa1", "#4ef45b", "#12cc15", "#009600", "#007800"],
         N=ncolors,
     )
     cmap.set_under("#ffffff")
-    cmap.set_over("#003000")
+    cmap.set_over("#007800")
     return cmap
+
+
+def imd_rainfall_actual_cmap() -> mcolors.Colormap:
+    return listed_cmap(
+        "imd_rainfall_actual",
+        ["#8affa1", "#4ef45b", "#12cc15", "#009600"],
+        under="#ffffff",
+        over="#007800",
+    )
 
 
 def imd_anomaly_cmap() -> mcolors.Colormap:
-    colors = [
-        "#d7301f",
-        "#fc5b2b",
-        "#fdae42",
-        "#fee08b",
-        "#ffffcc",
-        "#ffffff",
-        "#d8daeb",
-        "#9e9ac8",
-        "#5e5aa6",
-        "#1d1a62",
-    ]
-    cmap = mcolors.ListedColormap(colors, name="imd_rainfall_anomaly")
-    cmap.set_under("#b30000")
-    cmap.set_over("#08083f")
+    return listed_cmap(
+        "imd_rainfall_anomaly",
+        [
+            "#ff5200",
+            "#ff8e1d",
+            "#ffca59",
+            "#fff4a5",
+            "#ffffff",
+            "#c8c8e9",
+            "#8c8cbf",
+            "#6464a3",
+            "#3c3c87",
+        ],
+        under="#d70e00",
+        over="#00001e",
+    )
+
+
+def imd_temperature_actual_cmap(scale: str) -> mcolors.Colormap:
+    if scale == "tmin":
+        return listed_cmap(
+            "imd_tmin_actual",
+            [
+                "#bebee2",
+                "#fffacd",
+                "#fff191",
+                "#ffe271",
+                "#ffca59",
+                "#ffa635",
+                "#ff8e1d",
+                "#ff6a00",
+                "#ff3a00",
+                "#eb1800",
+                "#c30400",
+                "#9b0000",
+                "#730000",
+            ],
+            under="#9696c6",
+            over="#5f0000",
+        )
+    if scale == "tmax":
+        return listed_cmap(
+            "imd_tmax_actual",
+            [
+                "#fffacd",
+                "#fff4a5",
+                "#ffee7d",
+                "#ffd665",
+                "#ffbe4d",
+                "#ffa635",
+                "#ff8e1d",
+                "#ff7605",
+                "#ff5200",
+                "#eb1800",
+                "#c30400",
+                "#9b0000",
+                "#730000",
+            ],
+            under="#aaaad4",
+            over="#5f0000",
+        )
+    cmap = plt.get_cmap("YlOrRd", 17)
+    cmap.set_under("#fff7bc")
+    cmap.set_over("#67000d")
     return cmap
 
 
-def temp_anomaly_cmap() -> mcolors.Colormap:
+def imd_temperature_anomaly_cmap() -> mcolors.Colormap:
+    return listed_cmap(
+        "imd_temperature_anomaly",
+        [
+            "#383880",
+            "#5a5a9c",
+            "#8282b8",
+            "#aaaad4",
+            "#c8c8e9",
+            "#dcdcf7",
+            "#fffacd",
+            "#ffa635",
+            "#ff7605",
+            "#ff5e00",
+            "#ff2e00",
+            "#c30400",
+        ],
+        under="#10103a",
+        over="#730000",
+    )
+
+
+def legacy_temp_anomaly_cmap() -> mcolors.Colormap:
     colors = [
         "#313695",
         "#5e63b6",
@@ -97,13 +187,13 @@ def temp_anomaly_cmap() -> mcolors.Colormap:
         "#bd0026",
         "#800026",
     ]
-    cmap = mcolors.ListedColormap(colors, name="temperature_anomaly")
+    cmap = mcolors.ListedColormap(colors, name="legacy_temperature_anomaly")
     cmap.set_under("#1f1f78")
     cmap.set_over("#67000d")
     return cmap
 
 
-def product_style(product: str, rainfall_scale: str):
+def product_style(product: str, rainfall_scale: str, temperature_actual_scale: str):
     if product == "tp_forecast":
         levels = (
             np.asarray([1, 5, 10, 20, 40], dtype=float)
@@ -116,7 +206,7 @@ def product_style(product: str, rainfall_scale: str):
             "title": "Forecast Rainfall (mm/day)",
             "suffix": "tp_forecast",
             "levels": levels,
-            "cmap": imd_green_cmap(len(levels) - 1),
+            "cmap": imd_rainfall_actual_cmap() if rainfall_scale == "imd" else imd_green_cmap(len(levels) - 1),
             "extend": "both",
         }
     if product == "tp_anomaly":
@@ -135,23 +225,35 @@ def product_style(product: str, rainfall_scale: str):
             "extend": "both",
         }
     if product == "t2m_forecast":
+        if temperature_actual_scale == "tmin":
+            levels = np.asarray([0, 4, 8, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32], dtype=float)
+        elif temperature_actual_scale == "tmax":
+            levels = np.asarray([26, 28, 30, 32, 34, 36, 38, 39, 40, 41, 42, 43, 44, 45], dtype=float)
+        else:
+            levels = np.asarray([0, 4, 8, 12, 16, 20, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46], dtype=float)
         return {
             "variable": "t2m",
             "data": "forecast_weekly",
             "title": "2m Temperature Actual (degC)",
             "suffix": "t2m_forecast",
-            "levels": np.asarray([0, 4, 8, 12, 16, 20, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46], dtype=float),
-            "cmap": plt.get_cmap("YlOrRd", 17),
+            "levels": levels,
+            "cmap": imd_temperature_actual_cmap(temperature_actual_scale),
             "extend": "both",
         }
     if product == "t2m_anomaly":
+        if temperature_actual_scale == "legacy":
+            levels = np.asarray([-10, -9, -7, -5, -3, -1, 0, 1, 3, 5, 7, 9, 10], dtype=float)
+            cmap = legacy_temp_anomaly_cmap()
+        else:
+            levels = np.asarray([-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6], dtype=float)
+            cmap = imd_temperature_anomaly_cmap()
         return {
             "variable": "t2m",
             "data": "anomaly_weekly",
             "title": "2m Temperature Anomaly (degC)",
             "suffix": "t2m_anomaly",
-            "levels": np.asarray([-10, -9, -7, -5, -3, -1, 0, 1, 3, 5, 7, 9, 10], dtype=float),
-            "cmap": temp_anomaly_cmap(),
+            "levels": levels,
+            "cmap": cmap,
             "extend": "both",
         }
     raise ValueError(f"unsupported product: {product}")
@@ -169,8 +271,9 @@ def plot_product(
     india_state_geoms: list,
     mask_india: bool,
     rainfall_scale: str,
+    temperature_actual_scale: str,
 ) -> Path:
-    style = product_style(product, rainfall_scale)
+    style = product_style(product, rainfall_scale, temperature_actual_scale)
     ic_date = str(ds.attrs.get("ic_date", "unknown"))
     init = datetime.strptime(ic_date, "%Y%m%d")
     data = ds[style["data"]].sel(variable=style["variable"]).values.astype("float32")
@@ -248,6 +351,7 @@ def main() -> int:
                 india_state_geoms=india_state_geoms,
                 mask_india=not args.no_mask_to_india,
                 rainfall_scale=args.rainfall_scale,
+                temperature_actual_scale=args.temperature_actual_scale,
             )
     return 0
 

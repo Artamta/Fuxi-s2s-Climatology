@@ -140,6 +140,16 @@ python scripts/plot_fuxi_weekly_analysis.py \
   --output-dir outputs/weekly_analysis_20260617
 ```
 
+For strict IMD colorbar comparison, use the sampled IMD color blocks and IMD rainfall thresholds:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --rainfall-scale imd \
+  --temperature-actual-scale tmax \
+  --output-dir outputs/weekly_analysis_20260617_imdscale
+```
+
 Outputs:
 
 - `fuxi_tp_forecast_20260617_6week.png`
@@ -147,11 +157,9 @@ Outputs:
 - `fuxi_t2m_forecast_20260617_6week.png`
 - `fuxi_t2m_anomaly_20260617_6week.png`
 
-The rainfall plot defaults to a FuXi-readable rainfall scale because the 20260617 FuXi ensemble rain values are much smaller than the strict IMD 1-40 mm/day scale. For exact IMD-style rainfall levels, add:
+The rainfall plot defaults to a FuXi-readable rainfall scale because the 20260617 FuXi ensemble rain values are much smaller than the strict IMD 1-40 mm/day scale. The `imd` rainfall option uses exact sampled IMD colors and thresholds.
 
-```bash
---rainfall-scale imd
-```
+The IMD colorbar colors were sampled from the current ERPAS image assets linked by the IMD extended-range page, including `rfactual`, `rfanom`, `tmaxactual`, `tminactual`, `tmaxanom`, and `tminanom`.
 
 Note: these FuXi forecast files contain `t2m` and `tp`; they do not contain true daily Tmin/Tmax channels. The current temperature maps are therefore `t2m` actual and `t2m` anomaly, not Tmin/Tmax.
 
