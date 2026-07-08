@@ -55,3 +55,14 @@ Default test:
 - partition: `GPU-AI_prio`
 - output: `outputs/smoke/20190617/raw/20190617/member/00/{01,02}.nc`
 
+Completed run:
+
+- date: `2026-07-09`
+- job id: `65442`
+- node: `gpu2`
+- result: `SMOKE CHECK OK`
+- files:
+  - `outputs/smoke/20190617/raw/20190617/member/00/01.nc`
+  - `outputs/smoke/20190617/raw/20190617/member/00/02.nc`
+
+The smoke output files are generated artifacts and remain ignored by git.
