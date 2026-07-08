@@ -52,10 +52,38 @@ Inference environment:
 
 `/home/raj.ayush/.conda/envs/fuxi_s2s/bin/python`
 
+## Step 2: Run June 17 Forecasts
+
+The full forecast runner is a SLURM array over the 20 June 17 initial dates:
+
+```bash
+mkdir -p /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/logs
+sbatch slurm/run_june17_forecasts.sbatch
+```
+
+Default run:
+
+- years: `2002-2021`
+- lead steps: `42`
+- members: `1` control member
+- partition: `GPU-AI_prio`
+- output root: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/raw/YYYY0617`
+
+For the full 50-member ensemble:
+
+```bash
+FUXI_MEMBERS=50 sbatch slurm/run_june17_forecasts.sbatch
+```
+
+Approximate output volume for all 20 years:
+
+- `1` member: about `7 GiB`
+- `10` members: about `69 GiB`
+- `50` members: about `346 GiB`
+
 ## Notes
 
 - Exact June 17 FuXi model forecast archives do not exist in the downloaded FuXi archive cadence, so we generate exact June 17 ICs ourselves.
 - Input generation uses ARCO ERA5 through Earth2Studio and mirrors FuXi `data_util.make_input` conventions.
 - `tp` is converted from m to mm and clipped to `[0, 1000]`.
 - `ttr` is divided by `3600`.
-

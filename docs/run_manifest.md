@@ -66,3 +66,37 @@ Completed run:
   - `outputs/smoke/20190617/raw/20190617/member/00/02.nc`
 
 The smoke output files are generated artifacts and remain ignored by git.
+
+## Full June 17 Forecast Plan
+
+SLURM array script:
+
+```bash
+mkdir -p /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/logs
+sbatch slurm/run_june17_forecasts.sbatch
+```
+
+Default planned run:
+
+- dates: all `20` June 17 ICs from `2002-2021`
+- members: `1`
+- steps: `42`
+- partition: `GPU-AI_prio`
+- output root: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/raw/YYYY0617`
+- expected files: `840`
+- expected storage: about `7 GiB`
+- expected runtime after scheduling: roughly `5-15 min` for the array, depending on GPU availability
+
+Full ensemble option:
+
+```bash
+FUXI_MEMBERS=50 sbatch slurm/run_june17_forecasts.sbatch
+```
+
+Full ensemble estimate:
+
+- expected files: `42,000`
+- expected storage: about `346 GiB`
+- expected runtime after scheduling: roughly `1-4 h`, depending on GPU concurrency and filesystem speed
+
+The repository is on `/home`, which is almost full, so full forecast output must stay under `/storage`.
