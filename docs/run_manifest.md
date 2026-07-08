@@ -39,3 +39,19 @@ Each file is about `16.9 MiB` and has expected FuXi input dimensions:
 
 Generated data are ignored by git through `.gitignore`.
 
+## Smoke Test
+
+Reusable one-member smoke test:
+
+```bash
+sbatch slurm/smoke_fuxi_one_member.sbatch
+```
+
+Default test:
+
+- date: `20190617`
+- members: `1`
+- lead steps: `2`
+- partition: `GPU-AI_prio`
+- output: `outputs/smoke/20190617/raw/20190617/member/00/{01,02}.nc`
+
