@@ -26,7 +26,7 @@ from plot_one_member_india_forecast import (
 )
 
 
-PRODUCTS = ("tp_forecast", "tp_anomaly", "t2m_forecast", "t2m_anomaly")
+PRODUCTS = ("tp_forecast", "tp_actual", "tp_anomaly", "t2m_forecast", "t2m_anomaly")
 
 
 def parse_args() -> argparse.Namespace:
@@ -194,7 +194,7 @@ def legacy_temp_anomaly_cmap() -> mcolors.Colormap:
 
 
 def product_style(product: str, rainfall_scale: str, temperature_actual_scale: str):
-    if product == "tp_forecast":
+    if product in {"tp_forecast", "tp_actual"}:
         levels = (
             np.asarray([1, 5, 10, 20, 40], dtype=float)
             if rainfall_scale == "imd"
@@ -203,8 +203,8 @@ def product_style(product: str, rainfall_scale: str, temperature_actual_scale: s
         return {
             "variable": "tp",
             "data": "forecast_weekly",
-            "title": "Forecast Rainfall (mm/day)",
-            "suffix": "tp_forecast",
+            "title": "Actual Rainfall (mm/day)" if product == "tp_actual" else "Forecast Rainfall (mm/day)",
+            "suffix": "tp_actual" if product == "tp_actual" else "tp_forecast",
             "levels": levels,
             "cmap": imd_rainfall_actual_cmap() if rainfall_scale == "imd" else imd_green_cmap(len(levels) - 1),
             "extend": "both",

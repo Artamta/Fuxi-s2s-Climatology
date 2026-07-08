@@ -248,3 +248,31 @@ Quick summary CSV:
 `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_summary_20260617.csv`
 
 The CSV is only for quick spatial min/mean/max checking. Gridded forecast, climatology, and anomaly fields are stored in NetCDF.
+
+## 2026-07-09: Separate Six-Week Rainfall Maps
+
+Readable FuXi-scale command:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --products tp_actual,tp_anomaly \
+  --output-dir outputs/rainfall_6week_20260617_readable
+```
+
+Strict IMD-scale command:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --products tp_actual,tp_anomaly \
+  --rainfall-scale imd \
+  --output-dir outputs/rainfall_6week_20260617_imdscale
+```
+
+Outputs:
+
+- `outputs/rainfall_6week_20260617_readable/fuxi_tp_actual_20260617_6week.png`
+- `outputs/rainfall_6week_20260617_readable/fuxi_tp_anomaly_20260617_6week.png`
+- `outputs/rainfall_6week_20260617_imdscale/fuxi_tp_actual_20260617_6week.png`
+- `outputs/rainfall_6week_20260617_imdscale/fuxi_tp_anomaly_20260617_6week.png`

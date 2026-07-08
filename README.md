@@ -192,6 +192,27 @@ For quick numeric checking, a compact weekly summary CSV was written to:
 
 `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_summary_20260617.csv`
 
+## Separate Six-Week Rainfall Maps
+
+For separate actual-rainfall and rainfall-anomaly figures through week 6:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --products tp_actual,tp_anomaly \
+  --output-dir outputs/rainfall_6week_20260617_readable
+```
+
+Strict IMD-scale version:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --products tp_actual,tp_anomaly \
+  --rainfall-scale imd \
+  --output-dir outputs/rainfall_6week_20260617_imdscale
+```
+
 ## Notes
 
 - Exact June 17 FuXi model forecast archives do not exist in the downloaded FuXi archive cadence, so we generate exact June 17 ICs ourselves.
