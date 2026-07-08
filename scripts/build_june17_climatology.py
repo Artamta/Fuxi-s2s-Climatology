@@ -22,6 +22,8 @@ DEFAULT_RAW_ROOT = Path("/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/raw
 DEFAULT_OUTPUT = Path("/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/june17/climatology_fuxi17june.nc")
 DEFAULT_BBOX = (66.5, 98.5, 5.0, 38.5)  # lon_min, lon_max, lat_min, lat_max
 DATA_VAR = "__xarray_dataarray_variable__"
+TP_MM_PER_DAY_SCALE = np.float32(24.0)
+TP_UNITS_NOTE = "mm/day (FuXi tp clipped at zero and multiplied by 24 from model-step mm)"
 
 
 def parse_ints(value: str) -> list[int]:
@@ -51,7 +53,7 @@ def convert_units(name: str, values: np.ndarray) -> np.ndarray:
     if name == "t2m" and float(np.nanmean(out)) > 100.0:
         out = out - np.float32(273.15)
     if name == "tp":
-        out = np.clip(out, 0.0, None)
+        out = np.clip(out, 0.0, None) * TP_MM_PER_DAY_SCALE
     return out.astype("float32", copy=False)
 
 
@@ -148,7 +150,7 @@ def write_climatology(
             "raw_root": str(raw_root),
             "bbox_lon_min_lon_max_lat_min_lat_max": ",".join(str(item) for item in bbox),
             "created_utc": datetime.now(timezone.utc).isoformat(),
-            "units_tp": "mm/day, FuXi output convention",
+            "units_tp": TP_UNITS_NOTE,
             "units_t2m": "degC",
         },
     )

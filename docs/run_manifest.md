@@ -159,12 +159,12 @@ Output:
 
 `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc`
 
-Quick range check:
+Quick range check after FuXi `tp * 24` conversion to `mm/day`:
 
-- climatology `tp`: min `0.0048`, mean `0.1049`, max `0.4578`
+- climatology `tp`: min `0.1154`, mean `2.5179`, max `10.9880`
 - climatology `t2m`: min `-8.82`, mean `22.72`, max `34.41`
-- forecast `tp`: min `0.0003`, mean `0.2594`, max `1.8954`
-- anomaly `tp`: min `-0.1287`, mean `0.1545`, max `1.6875`
+- forecast `tp`: min `0.0068`, mean `6.2258`, max `45.4889`
+- anomaly `tp`: min `-3.0883`, mean `3.7079`, max `40.4990`
 - forecast `t2m`: min `-8.00`, mean `23.05`, max `38.60`
 - anomaly `t2m`: min `-7.79`, mean `0.34`, max `7.10`
 
@@ -286,3 +286,5 @@ Strict ERPAS/IMD rainfall scale:
 
 - actual: `0,2,5,10,20,40`
 - anomaly: `-20,-15,-10,-5,-2,2,5,10,15,20`
+
+Note: FuXi `tp` is clipped at zero and multiplied by `24` in the shared unit conversion before climatology, forecast, anomaly, CSV, and plots are written.
