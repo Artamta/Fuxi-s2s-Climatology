@@ -76,7 +76,7 @@ def imd_green_cmap(ncolors: int) -> mcolors.Colormap:
 def imd_rainfall_actual_cmap() -> mcolors.Colormap:
     return listed_cmap(
         "imd_rainfall_actual",
-        ["#8affa1", "#4ef45b", "#12cc15", "#009600"],
+        ["#ffffff", "#8affa1", "#4ef45b", "#12cc15", "#009600"],
         under="#ffffff",
         over="#007800",
     )
@@ -196,7 +196,7 @@ def legacy_temp_anomaly_cmap() -> mcolors.Colormap:
 def product_style(product: str, rainfall_scale: str, temperature_actual_scale: str):
     if product in {"tp_forecast", "tp_actual"}:
         levels = (
-            np.asarray([1, 5, 10, 20, 40], dtype=float)
+            np.asarray([0, 2, 5, 10, 20, 40], dtype=float)
             if rainfall_scale == "imd"
             else np.asarray([0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 20], dtype=float)
         )
@@ -211,7 +211,7 @@ def product_style(product: str, rainfall_scale: str, temperature_actual_scale: s
         }
     if product == "tp_anomaly":
         levels = (
-            np.asarray([-15, -10, -7, -3, -1, 1, 3, 7, 10, 15], dtype=float)
+            np.asarray([-20, -15, -10, -5, -2, 2, 5, 10, 15, 20], dtype=float)
             if rainfall_scale == "imd"
             else np.asarray([-2, -1, -0.5, -0.25, -0.1, 0.1, 0.25, 0.5, 1, 2], dtype=float)
         )

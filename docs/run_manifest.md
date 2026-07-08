@@ -205,6 +205,11 @@ IMD colorbar sampling source:
 - page: `https://mausam.imd.gov.in/responsive/extendedRangeForecast.php`
 - sampled assets: `rfactual_MME2026070100.png`, `rfanom_MME2026070100.png`, `tmaxactual_MME2026070100.png`, `tminactual_MME2026070100.png`, `tmaxanom_MME2026070100.png`, `tminanom_MME2026070100.png`
 
+Rainfall strict scale:
+
+- actual: `0,2,5,10,20,40`
+- anomaly: `-20,-15,-10,-5,-2,2,5,10,15,20`
+
 Note: FuXi output contains `t2m` and `tp`; no true Tmin/Tmax channel exists in these files.
 
 ## 2026-07-09: PPT-Ready ERPAS Subset
@@ -276,3 +281,8 @@ Outputs:
 - `outputs/rainfall_6week_20260617_readable/fuxi_tp_anomaly_20260617_6week.png`
 - `outputs/rainfall_6week_20260617_imdscale/fuxi_tp_actual_20260617_6week.png`
 - `outputs/rainfall_6week_20260617_imdscale/fuxi_tp_anomaly_20260617_6week.png`
+
+Strict ERPAS/IMD rainfall scale:
+
+- actual: `0,2,5,10,20,40`
+- anomaly: `-20,-15,-10,-5,-2,2,5,10,15,20`

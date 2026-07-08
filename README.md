@@ -157,7 +157,7 @@ Outputs:
 - `fuxi_t2m_forecast_20260617_6week.png`
 - `fuxi_t2m_anomaly_20260617_6week.png`
 
-The rainfall plot defaults to a FuXi-readable rainfall scale because the 20260617 FuXi ensemble rain values are much smaller than the strict IMD 1-40 mm/day scale. The `imd` rainfall option uses exact sampled IMD colors and thresholds.
+The rainfall plot defaults to a FuXi-readable rainfall scale because the 20260617 FuXi ensemble rain values are much smaller than the strict ERPAS/IMD scale. The `imd` rainfall option uses sampled ERPAS/IMD colors with actual rainfall levels `0,2,5,10,20,40` and anomaly levels `-20,-15,-10,-5,-2,2,5,10,15,20`.
 
 The IMD colorbar colors were sampled from the current ERPAS image assets linked by the IMD extended-range page, including `rfactual`, `rfanom`, `tmaxactual`, `tminactual`, `tmaxanom`, and `tminanom`.
 
@@ -179,7 +179,7 @@ This writes:
 - `fuxi_ppt_weekwise_t2m_actual_20260617.png`
 - `fuxi_ppt_weekwise_t2m_anomaly_20260617.png`
 
-The rainfall slide above uses the ERPAS/PPT rainfall thresholds. Because FuXi rainfall is much smaller, a presentation-readable rainfall version can also be made:
+The rainfall slide above uses the ERPAS/PPT rainfall thresholds: actual rainfall `0,2,5,10,20,40` and anomaly `-20,-15,-10,-5,-2,2,5,10,15,20`. Because FuXi rainfall is much smaller, a presentation-readable rainfall version can also be made:
 
 ```bash
 python scripts/plot_fuxi_ppt_weekly.py \

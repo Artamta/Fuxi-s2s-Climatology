@@ -41,6 +41,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def rainfall_actual_cmap(ncolors: int) -> mcolors.Colormap:
+    if ncolors == 5:
+        return listed_cmap(
+            "erpas_ppt_rain_actual",
+            ["#ffffff", "#8affa1", "#4ef45b", "#12cc15", "#009600"],
+            under="#ffffff",
+            over="#007800",
+        )
     if ncolors == 4:
         return listed_cmap(
             "erpas_ppt_rain_actual",
@@ -163,7 +170,7 @@ def make_rainfall_slide(
     india_state_geoms: list,
     rainfall_scale: str,
 ) -> Path:
-    actual_levels = np.asarray([2, 5, 10, 20, 40], dtype=float)
+    actual_levels = np.asarray([0, 2, 5, 10, 20, 40], dtype=float)
     anomaly_levels = np.asarray([-20, -15, -10, -5, -2, 2, 5, 10, 15, 20], dtype=float)
     suffix = "rainfall"
     if rainfall_scale == "fuxi":
