@@ -264,6 +264,24 @@ python scripts/plot_fuxi_t2m_00z_extremes.py \
 
 Do not present the proxy product as true Tmin/Tmax; it is min/max of one daily 00Z `t2m` value per lead day.
 
+## Case-Study Cumulative Rainfall Comparison
+
+The existing final-paper case-study package has FuXi-S2S and ECMWF-S2S cumulative rainfall CSVs for IC `20260623`, plus a historical `20190627` case with IMD observed rainfall. To rebuild lightweight observed-availability comparison plots in this repo:
+
+```bash
+python scripts/make_case_study_cumulative_obs_compare.py \
+  --init-date 20260623 \
+  --current-date 2026-07-09 \
+  --output-dir outputs/case_study_cumulative_obs_compare
+
+python scripts/make_case_study_cumulative_obs_compare.py \
+  --init-date 20190627 \
+  --current-date 2019-08-08 \
+  --output-dir outputs/case_study_cumulative_obs_compare
+```
+
+Current status for `20260623`: no local IMERG file was found/provided, local IMD observed rainfall only goes through `2025`, and ARCO ERA5 rejected the first valid date `2026-06-24` because its latest available date was `2026-06-17`. The script still writes a forecast/climatology figure plus an availability JSON so it can be rerun when observations arrive.
+
 ## Notes
 
 - Exact June 17 FuXi model forecast archives do not exist in the downloaded FuXi archive cadence, so we generate exact June 17 ICs ourselves.

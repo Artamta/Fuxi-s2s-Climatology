@@ -374,3 +374,48 @@ Proxy range check:
 - anomaly `00Z t2m` weekly max: min `-8.16`, mean `0.51`, max `7.34`
 
 Warning: the proxy product is not true daily Tmin/Tmax; it is min/max of one daily 00Z `t2m` value per lead day.
+
+## 2026-07-09: Case-Study Cumulative Rainfall Observed Comparison
+
+Source case-study folder:
+
+`/home/raj.ayush/s2s/s2s_anlysis/final_paper/case-study`
+
+Current 2026 ECMWF/FuXi package command:
+
+```bash
+python scripts/make_case_study_cumulative_obs_compare.py \
+  --init-date 20260623 \
+  --current-date 2026-07-09 \
+  --output-dir outputs/case_study_cumulative_obs_compare
+```
+
+Historical observed comparison command:
+
+```bash
+python scripts/make_case_study_cumulative_obs_compare.py \
+  --init-date 20190627 \
+  --current-date 2019-08-08 \
+  --output-dir outputs/case_study_cumulative_obs_compare
+```
+
+Outputs:
+
+- `outputs/case_study_cumulative_obs_compare/20260623_cumulative_rainfall_fuxi_ecmwf_available_obs.png`
+- `outputs/case_study_cumulative_obs_compare/20260623_cumulative_rainfall_available_obs.csv`
+- `outputs/case_study_cumulative_obs_compare/20260623_observation_availability.json`
+- `outputs/case_study_cumulative_obs_compare/20190627_cumulative_rainfall_fuxi_ecmwf_available_obs.png`
+- `outputs/case_study_cumulative_obs_compare/20190627_cumulative_rainfall_available_obs.csv`
+- `outputs/case_study_cumulative_obs_compare/20190627_observation_availability.json`
+
+Availability result for IC `20260623`:
+
+- local IMD observed rainfall files are present only through `2025`
+- no local IMERG file was found or provided
+- ARCO ERA5 rejected `2026-06-24`; latest available date seen was `2026-06-17`, before the valid window starts
+
+Availability result for IC `20190627`:
+
+- historical IMD observed cumulative rainfall is present for all `42` lead days
+
+Note: the 2026 product is therefore forecast/climatology-only for now, with an availability JSON. Rerun the same command when IMERG or newer ERA5 data is available.
