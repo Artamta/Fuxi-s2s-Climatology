@@ -26,5 +26,6 @@ __pycache__/
 .netrc
 .urs_cookies
 .earthdata_token
+scripts/imerge.txt
 *cookies*
 *token*

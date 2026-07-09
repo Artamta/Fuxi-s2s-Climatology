@@ -347,3 +347,23 @@ Forecast output root:
 `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/raw/20260517`
 
 Current status: `20260517` has a complete 50-member x 42-lead-day FuXi forecast under the May-17 storage folder, and the raw tree passed `scripts/check_smoke_output.py`.
+
+Download ARCO ERA5 daily total precipitation truth for the same valid window:
+
+```bash
+/home/raj.ayush/.conda/envs/earth2/bin/python scripts/download_arco_tp_truth.py \
+  --ic-date 20260517 \
+  --lead-days 42 \
+  --output-dir /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth \
+  --chunk-days 3 \
+  --timeout 900 \
+  --overwrite
+```
+
+Outputs:
+
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517.nc`
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517_summary.csv`
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517_availability.json`
+
+Current ARCO status for this IC: complete daily `tp` truth is available for lead days `1-30` (`2026-05-18` through `2026-06-16`). Lead day `31` is incomplete because ARCO currently has only `2026-06-17 00Z`, not the full UTC day, and lead days `32-42` are unavailable. The NetCDF therefore stores only complete daily totals, with the unavailable days recorded in the CSV/JSON sidecars.

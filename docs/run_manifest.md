@@ -545,3 +545,47 @@ Submitted job:
 - manual validation: `SMOKE CHECK OK: 50 member(s) x 42 step(s)`
 
 Note: job `65914` was launched before the runner default was patched to use the FuXi Python for post-run checking, so SLURM marked the batch step failed after the model completed. The raw forecast tree is complete and passed the manual checker.
+
+## 2026-07-09: May-17 ARCO ERA5 Total Precipitation Truth
+
+Purpose: download real daily total precipitation for verification of the May-17 FuXi-S2S forecast, using the same India-region domain as the plotting/verification workflow.
+
+Command:
+
+```bash
+/home/raj.ayush/.conda/envs/earth2/bin/python scripts/download_arco_tp_truth.py \
+  --ic-date 20260517 \
+  --lead-days 42 \
+  --output-dir /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth \
+  --chunk-days 3 \
+  --timeout 900 \
+  --overwrite
+```
+
+Outputs:
+
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517.nc`
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517_summary.csv`
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517_availability.json`
+
+NetCDF contents:
+
+- variable: `tp_daily`
+- units: `mm/day`
+- dimensions: `lead_day=30, lat=135, lon=129`
+- valid dates: `2026-05-18` through `2026-06-16`
+- method: sum of 24 hourly ARCO ERA5 `tp` fields from `00Z` through `23Z` UTC, clipped at zero and converted from metres to millimetres
+- bbox: `66.5E-98.5E, 5.0N-38.5N`
+
+Availability result:
+
+- complete lead days: `30`
+- missing or incomplete lead days: `12`
+- lead day `31` (`2026-06-17`) is incomplete because ARCO currently exposes only `2026-06-17 00Z`, not all 24 hours
+- lead days `32-42` (`2026-06-18` through `2026-06-28`) are unavailable from ARCO at the time of this run
+
+Range check over the downloaded domain:
+
+- min: `0.00 mm/day`
+- mean: `4.78 mm/day`
+- max: `283.12 mm/day`
