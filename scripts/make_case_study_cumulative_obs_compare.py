@@ -182,7 +182,7 @@ def plot_comparison(df: pd.DataFrame, init_date: str, availability: dict, output
     ax.plot(x, df["fuxi"], color=COLORS["fuxi"], lw=3.0, label="FuXi-S2S ensemble mean")
     ax.plot(x, df["ecmwf"], color=COLORS["ecmwf"], lw=3.0, label="ECMWF-S2S ensemble mean")
     if "imd_observed" in df.columns:
-        ax.plot(x, df["imd_observed"], color=COLORS["imd_obs"], lw=3.2, label="Observed rainfall")
+        ax.plot(x, df["imd_observed"], color=COLORS["imd_obs"], lw=3.2, label=f"IMD observed rainfall ({init_date[:4]})")
 
     ticks = [item for item in [1, 7, 14, 21, 28, 35, 42] if item <= int(df["lead_day"].max())]
     date_lookup = {int(row.lead_day): pd.Timestamp(row.valid_date) for row in df.itertuples()}
@@ -199,7 +199,11 @@ def plot_comparison(df: pd.DataFrame, init_date: str, availability: dict, output
 
     valid_start = availability["valid_start"]
     valid_end = availability["valid_end"]
-    fig.text(0.055, 0.965, "Cumulative Rainfall: FuXi-S2S, ECMWF-S2S, and Available Observations", fontsize=19, fontweight="bold", color=COLORS["text"])
+    if availability["historical_imd_observed_available"]:
+        title = "Historical Cumulative Rainfall Verification"
+    else:
+        title = "Cumulative Rainfall Forecast and Climatology Comparison"
+    fig.text(0.055, 0.965, title, fontsize=19, fontweight="bold", color=COLORS["text"])
     fig.text(0.055, 0.925, f"IC {init_date} | valid {valid_start} to {valid_end} | All-India area mean", fontsize=11.5, color=COLORS["muted"])
     if not availability["historical_imd_observed_available"]:
         fig.text(
