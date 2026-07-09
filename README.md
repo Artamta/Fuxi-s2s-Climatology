@@ -389,3 +389,22 @@ Processed comparable output:
 - `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed/ecmwf_20260517_tp_ens50_lead42_india_1p5deg_daily_mm.nc`
 
 The raw ECMWF `tp` files are accumulated precipitation in `kg m**-2`, which is numerically equivalent to millimetres of water. The processed file uses the first 50 perturbed members only, differences the cumulative field into daily increments, clips tiny negative packing artifacts to zero, and stores `tp(member, lead_time, lat, lon)` in `mm/day`.
+
+Build the May-17 FuXi/ECMWF/ARCO comparison plots for the clean 30-day truth window:
+
+```bash
+python scripts/plot_may17_fuxi_ecmwf_arco.py \
+  --ic-date 20260517 \
+  --lead-days 30 \
+  --output-dir outputs/may17_fuxi_ecmwf_arco
+```
+
+Outputs:
+
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_rainfall_fuxi_ecmwf_arco.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_4panel_fuxi_ecmwf_arco.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_bias_4panel_fuxi_ecmwf_arco.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_timeseries.csv`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_fields.nc`
+
+For lead days `1-30`, the all-India cumulative totals are: ARCO ERA5 `70.7 mm`, FuXi-S2S ensemble mean `33.9 mm`, and ECMWF-S2S ensemble mean `95.1 mm`.

@@ -649,3 +649,50 @@ Comparison window:
 
 - ECMWF forecast is present for all `42` lead days
 - ARCO ERA5 truth is complete for lead days `1-30`, so clean ECMWF/FuXi/truth verification is currently lead days `1-30`
+
+## 2026-07-09: May-17 FuXi/ECMWF/ARCO Verification Plots
+
+Purpose: make a compact verification package for the clean May-17 observed window where FuXi, ECMWF, and ARCO ERA5 are all available.
+
+Command:
+
+```bash
+python scripts/plot_may17_fuxi_ecmwf_arco.py \
+  --ic-date 20260517 \
+  --lead-days 30 \
+  --output-dir outputs/may17_fuxi_ecmwf_arco
+```
+
+Inputs:
+
+- FuXi raw forecast: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/raw/20260517`
+- FuXi members: `00-49`
+- ECMWF processed forecast: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed/ecmwf_20260517_tp_ens50_lead42_india_1p5deg_daily_mm.nc`
+- ARCO ERA5 truth: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517.nc`
+
+Outputs:
+
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_rainfall_fuxi_ecmwf_arco.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_4panel_fuxi_ecmwf_arco.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_bias_4panel_fuxi_ecmwf_arco.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_timeseries.csv`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_fields.nc`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_verification_manifest.json`
+
+Figure set:
+
+- cumulative all-India rainfall line plot for lead days `1-30`
+- four-panel spatial cumulative rainfall map: ARCO truth, FuXi mean, ECMWF mean, FuXi minus ECMWF
+- four-panel spatial bias map: ARCO truth, FuXi minus ARCO, ECMWF minus ARCO, FuXi minus ECMWF
+
+Final all-India cumulative rainfall through lead day `30`:
+
+- ARCO ERA5 truth: `70.74 mm`
+- FuXi-S2S ensemble mean: `33.91 mm`
+- ECMWF-S2S ensemble mean: `95.13 mm`
+
+Notes:
+
+- line-plot means are area-weighted over India using the local India/state shapefile geometry
+- spatial maps shade the full plotted domain by default and overlay India/state boundaries
+- ARCO truth is interpolated to the model grid only for bias panels and cached fields
