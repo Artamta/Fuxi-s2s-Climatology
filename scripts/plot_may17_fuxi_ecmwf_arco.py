@@ -36,6 +36,7 @@ DEFAULT_ECMWF_FILE = Path(
     "/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed/"
     "ecmwf_20260517_tp_ens50_lead42_india_1p5deg_daily_mm.nc"
 )
+DEFAULT_ECMWF_CF_FILE = Path("/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/raw/tp/20260517_cf.nc")
 DEFAULT_ARCO_FILE = Path(
     "/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/"
     "arco_era5_tp_daily_20260517.nc"
@@ -47,7 +48,7 @@ COLORS = {
     "fuxi_dark": "#006d3c",
     "ecmwf": "#ff8c1a",
     "ecmwf_dark": "#b85200",
-    "arco": "#111827",
+    "arco": "#1559a6",
     "text": "#1f2933",
     "muted": "#5b6472",
     "grid": "#dce3ea",
@@ -99,6 +100,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--bbox", type=float, nargs=4, default=DEFAULT_BBOX, metavar=("LON_MIN", "LON_MAX", "LAT_MIN", "LAT_MAX"))
     parser.add_argument("--fuxi-raw-dir", type=Path, default=DEFAULT_FUXI_RAW_DIR)
     parser.add_argument("--ecmwf-file", type=Path, default=DEFAULT_ECMWF_FILE)
+    parser.add_argument("--ecmwf-cf-file", type=Path, default=DEFAULT_ECMWF_CF_FILE)
     parser.add_argument("--arco-file", type=Path, default=DEFAULT_ARCO_FILE)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--dpi", type=int, default=220)
@@ -231,6 +233,37 @@ def read_ecmwf(path: Path, lead_days: int, bbox: tuple[float, float, float, floa
         ds.close()
 
 
+def open_ecmwf_raw(path: Path) -> xr.Dataset:
+    try:
+        return xr.open_dataset(path)
+    except ValueError as exc:
+        if "Failed to decode variable 'step'" not in str(exc):
+            raise
+        return xr.open_dataset(path, decode_timedelta=False)
+
+
+def read_ecmwf_control_cumulative(
+    path: Path,
+    lead_days: int,
+    bbox: tuple[float, float, float, float],
+    india_geoms: list,
+) -> np.ndarray | None:
+    if not path.exists():
+        return None
+    ds = open_ecmwf_raw(path)
+    try:
+        da = select_latlon(ds["tp"].isel(step=slice(0, lead_days)), bbox)
+        lat_name = "lat" if "lat" in da.coords else "latitude"
+        lon_name = "lon" if "lon" in da.coords else "longitude"
+        lat = da[lat_name].values.astype("float32")
+        lon = da[lon_name].values.astype("float32")
+        _, weights = mask_and_weights(lat, lon, india_geoms)
+        values = da.values.astype("float32")
+        return np.asarray([weighted_mean(values[idx], weights) for idx in range(lead_days)], dtype=np.float32)
+    finally:
+        ds.close()
+
+
 def read_arco(path: Path, lead_days: int, bbox: tuple[float, float, float, float], india_geoms: list) -> TruthProduct:
     if not path.exists():
         raise FileNotFoundError(path)
@@ -256,26 +289,35 @@ def date_range_for(ic_date: str, lead_days: int) -> pd.DatetimeIndex:
     return pd.date_range(init + timedelta(days=1), periods=lead_days, freq="D")
 
 
-def build_timeseries(ic_date: str, lead_days: int, fuxi: ModelProduct, ecmwf: ModelProduct, truth: TruthProduct) -> pd.DataFrame:
+def build_timeseries(
+    ic_date: str,
+    lead_days: int,
+    fuxi: ModelProduct,
+    ecmwf: ModelProduct,
+    truth: TruthProduct,
+    ecmwf_control_cumulative: np.ndarray | None,
+) -> pd.DataFrame:
     valid_dates = date_range_for(ic_date, lead_days)
     fuxi_cum = fuxi.cumulative_member
     ecmwf_cum = ecmwf.cumulative_member
-    return pd.DataFrame(
-        {
-            "lead_day": np.arange(1, lead_days + 1, dtype=np.int32),
-            "valid_date": valid_dates.strftime("%Y-%m-%d"),
-            "arco_daily_mm": truth.daily_mean,
-            "arco_cumulative_mm": truth.cumulative,
-            "fuxi_daily_ens_mean_mm": fuxi.daily_ens_mean,
-            "fuxi_cumulative_p10_mm": np.percentile(fuxi_cum, 10, axis=0),
-            "fuxi_cumulative_ens_mean_mm": fuxi_cum.mean(axis=0),
-            "fuxi_cumulative_p90_mm": np.percentile(fuxi_cum, 90, axis=0),
-            "ecmwf_daily_ens_mean_mm": ecmwf.daily_ens_mean,
-            "ecmwf_cumulative_p10_mm": np.percentile(ecmwf_cum, 10, axis=0),
-            "ecmwf_cumulative_ens_mean_mm": ecmwf_cum.mean(axis=0),
-            "ecmwf_cumulative_p90_mm": np.percentile(ecmwf_cum, 90, axis=0),
-        }
-    )
+    data = {
+        "lead_day": np.arange(1, lead_days + 1, dtype=np.int32),
+        "valid_date": valid_dates.strftime("%Y-%m-%d"),
+        "arco_daily_mm": truth.daily_mean,
+        "arco_cumulative_mm": truth.cumulative,
+        "fuxi_daily_ens_mean_mm": fuxi.daily_ens_mean,
+        "fuxi_cumulative_p10_mm": np.percentile(fuxi_cum, 10, axis=0),
+        "fuxi_cumulative_ens_mean_mm": fuxi_cum.mean(axis=0),
+        "fuxi_cumulative_p90_mm": np.percentile(fuxi_cum, 90, axis=0),
+        "fuxi_member00_cumulative_mm": fuxi_cum[0],
+        "ecmwf_daily_ens_mean_mm": ecmwf.daily_ens_mean,
+        "ecmwf_cumulative_p10_mm": np.percentile(ecmwf_cum, 10, axis=0),
+        "ecmwf_cumulative_ens_mean_mm": ecmwf_cum.mean(axis=0),
+        "ecmwf_cumulative_p90_mm": np.percentile(ecmwf_cum, 90, axis=0),
+    }
+    if ecmwf_control_cumulative is not None:
+        data["ecmwf_control_cumulative_mm"] = ecmwf_control_cumulative
+    return pd.DataFrame(data)
 
 
 def plot_cumulative(df: pd.DataFrame, ic_date: str, output: Path) -> Path:
@@ -321,6 +363,95 @@ def plot_cumulative(df: pd.DataFrame, ic_date: str, output: Path) -> Path:
         color=COLORS["muted"],
     )
     fig.subplots_adjust(left=0.075, right=0.975, bottom=0.16, top=0.86)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output)
+    plt.close(fig)
+    return output
+
+
+def annotate_endpoint(ax: plt.Axes, x: float, y: float, label: str, color: str, offset: float = 0.0) -> None:
+    ax.annotate(
+        label,
+        xy=(x, y),
+        xytext=(x + 0.7, y + offset),
+        ha="left",
+        va="center",
+        color=color,
+        fontsize=11,
+        fontweight="bold",
+        bbox=dict(boxstyle="round,pad=0.22", facecolor="white", edgecolor=color, linewidth=1.0, alpha=0.96),
+    )
+
+
+def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) -> Path:
+    fig, ax = plt.subplots(figsize=(15.2, 7.6), facecolor="white")
+    x = df["lead_day"].to_numpy()
+
+    ax.fill_between(x, df["fuxi_cumulative_p10_mm"], df["fuxi_cumulative_p90_mm"], color=COLORS["fuxi"], alpha=0.12, linewidth=0)
+    ax.fill_between(x, df["ecmwf_cumulative_p10_mm"], df["ecmwf_cumulative_p90_mm"], color=COLORS["ecmwf"], alpha=0.14, linewidth=0)
+    ax.plot(x, df["arco_cumulative_mm"], color=COLORS["arco"], lw=3.1, label="ARCO ERA5 truth")
+    ax.plot(x, df["fuxi_cumulative_ens_mean_mm"], color=COLORS["fuxi"], lw=3.0, label="FuXi-S2S ensemble mean")
+    ax.plot(x, df["fuxi_member00_cumulative_mm"], color=COLORS["fuxi_dark"], lw=2.4, ls=(0, (7, 5)), label="FuXi member 00")
+    ax.plot(x, df["ecmwf_cumulative_ens_mean_mm"], color=COLORS["ecmwf"], lw=3.0, label="ECMWF-S2S ensemble mean")
+    if "ecmwf_control_cumulative_mm" in df.columns:
+        ax.plot(x, df["ecmwf_control_cumulative_mm"], color=COLORS["ecmwf_dark"], lw=2.4, ls=(0, (7, 5)), label="ECMWF control")
+
+    tick_days = [1, 7, 14, 21, 28, int(x[-1])]
+    tick_days = list(dict.fromkeys(tick_days))
+    valid_lookup = {int(row.lead_day): pd.Timestamp(row.valid_date) for row in df.itertuples()}
+    ax.set_xticks(tick_days, [f"L{lead}\n{valid_lookup[lead].strftime('%b %-d')}" for lead in tick_days])
+    ymax = max(
+        float(df["fuxi_cumulative_p90_mm"].max()),
+        float(df["ecmwf_cumulative_p90_mm"].max()),
+        float(df["arco_cumulative_mm"].max()),
+        float(df["ecmwf_control_cumulative_mm"].max()) if "ecmwf_control_cumulative_mm" in df.columns else 0.0,
+    )
+    ax.set_ylim(0, ymax * 1.22)
+    ax.set_xlim(0.2, float(x[-1]) + 2.4)
+    ax.set_xlabel("Lead day and valid date")
+    ax.set_ylabel("Cumulative rainfall (mm)")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.legend(
+        loc="upper left",
+        ncol=2,
+        frameon=True,
+        facecolor="white",
+        edgecolor="#d9dee5",
+        framealpha=0.96,
+        borderpad=0.6,
+        columnspacing=1.4,
+    )
+
+    final_x = float(x[-1])
+    final_values = {
+        "ECMWF": float(df["ecmwf_cumulative_ens_mean_mm"].iloc[-1]),
+        "ARCO": float(df["arco_cumulative_mm"].iloc[-1]),
+        "FuXi": float(df["fuxi_cumulative_ens_mean_mm"].iloc[-1]),
+    }
+    annotate_endpoint(ax, final_x, final_values["ECMWF"], f"ECMWF {final_values['ECMWF']:.0f} mm", COLORS["ecmwf"], offset=6.0)
+    annotate_endpoint(ax, final_x, final_values["ARCO"], f"ARCO {final_values['ARCO']:.0f} mm", COLORS["arco"], offset=0.0)
+    annotate_endpoint(ax, final_x, final_values["FuXi"], f"FuXi {final_values['FuXi']:.0f} mm", COLORS["fuxi"], offset=-5.0)
+
+    valid_dates = pd.to_datetime(df["valid_date"])
+    fig.text(0.055, 0.965, f"{int(x[-1])}-Day Cumulative Rainfall Forecast over India", fontsize=22, fontweight="bold", color=COLORS["text"])
+    fig.text(
+        0.055,
+        0.925,
+        f"Initialized {pd.Timestamp(datetime.strptime(ic_date, '%Y%m%d')).strftime('%-d %b %Y')} | "
+        f"valid {valid_dates.iloc[0].strftime('%-d %b')}-{valid_dates.iloc[-1].strftime('%-d %b')} | "
+        "FuXi-S2S and ECMWF-S2S versus ARCO ERA5 truth",
+        fontsize=12,
+        color=COLORS["muted"],
+    )
+    fig.text(
+        0.055,
+        0.035,
+        "ARCO ERA5 truth is available as complete daily totals through lead day 30; shaded bands show member p10-p90.",
+        fontsize=8.8,
+        color=COLORS["muted"],
+    )
+    fig.subplots_adjust(left=0.07, right=0.91, bottom=0.15, top=0.86)
     output.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output)
     plt.close(fig)
@@ -593,14 +724,16 @@ def main() -> int:
     fuxi = read_fuxi(args.fuxi_raw_dir, members, args.lead_days, bbox, india_outline_geoms)
     print("loading ECMWF...")
     ecmwf = read_ecmwf(args.ecmwf_file, args.lead_days, bbox, india_outline_geoms)
+    ecmwf_control_cumulative = read_ecmwf_control_cumulative(args.ecmwf_cf_file, args.lead_days, bbox, india_outline_geoms)
     print("loading ARCO...")
     truth = read_arco(args.arco_file, args.lead_days, bbox, india_outline_geoms)
 
-    df = build_timeseries(args.ic_date, args.lead_days, fuxi, ecmwf, truth)
+    df = build_timeseries(args.ic_date, args.lead_days, fuxi, ecmwf, truth, ecmwf_control_cumulative)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     csv_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_cumulative_timeseries.csv"
     fields_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_spatial_fields.nc"
     line_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_cumulative_rainfall_fuxi_ecmwf_arco.png"
+    paper_line_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_cumulative_rainfall_paperstyle_fuxi_ecmwf_arco.png"
     spatial_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_spatial_4panel_fuxi_ecmwf_arco.png"
     bias_spatial_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_spatial_bias_4panel_fuxi_ecmwf_arco.png"
     manifest_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_verification_manifest.json"
@@ -608,6 +741,7 @@ def main() -> int:
     df.to_csv(csv_out, index=False)
     write_spatial_cache(fields_out, args.ic_date, args.lead_days, fuxi, ecmwf, truth)
     plot_cumulative(df, args.ic_date, line_out)
+    plot_cumulative_paper_style(df, args.ic_date, paper_line_out)
     plot_spatial(
         ic_date=args.ic_date,
         lead_days=args.lead_days,
@@ -644,11 +778,13 @@ def main() -> int:
         "valid_end": df["valid_date"].iloc[-1],
         "fuxi_raw_dir": str(args.fuxi_raw_dir),
         "ecmwf_file": str(args.ecmwf_file),
+        "ecmwf_cf_file": str(args.ecmwf_cf_file),
         "arco_file": str(args.arco_file),
         "members": len(members),
         "timeseries_csv": str(csv_out),
         "spatial_fields": str(fields_out),
         "cumulative_plot": str(line_out),
+        "cumulative_paperstyle_plot": str(paper_line_out),
         "spatial_plot": str(spatial_out),
         "spatial_bias_plot": str(bias_spatial_out),
         "final_cumulative_mm": {
@@ -663,6 +799,7 @@ def main() -> int:
     print(f"wrote csv     : {csv_out}")
     print(f"wrote fields  : {fields_out}")
     print(f"wrote line    : {line_out}")
+    print(f"wrote paper   : {paper_line_out}")
     print(f"wrote spatial : {spatial_out}")
     print(f"wrote bias map: {bias_spatial_out}")
     print(f"wrote manifest: {manifest_out}")

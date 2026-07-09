@@ -673,6 +673,7 @@ Inputs:
 Outputs:
 
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_rainfall_fuxi_ecmwf_arco.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_rainfall_paperstyle_fuxi_ecmwf_arco.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_4panel_fuxi_ecmwf_arco.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_bias_4panel_fuxi_ecmwf_arco.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_timeseries.csv`
@@ -682,6 +683,7 @@ Outputs:
 Figure set:
 
 - cumulative all-India rainfall line plot for lead days `1-30`
+- paper-style cumulative all-India rainfall plot matching the final-paper case-study layout, including endpoint labels, FuXi member 00, and ECMWF control
 - four-panel spatial cumulative rainfall map: ARCO truth, FuXi mean, ECMWF mean, FuXi minus ECMWF
 - four-panel spatial bias map: ARCO truth, FuXi minus ARCO, ECMWF minus ARCO, FuXi minus ECMWF
 
@@ -689,7 +691,9 @@ Final all-India cumulative rainfall through lead day `30`:
 
 - ARCO ERA5 truth: `70.74 mm`
 - FuXi-S2S ensemble mean: `33.91 mm`
+- FuXi member 00: `64.30 mm`
 - ECMWF-S2S ensemble mean: `95.13 mm`
+- ECMWF control: `87.06 mm`
 
 Notes:
 

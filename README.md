@@ -402,9 +402,10 @@ python scripts/plot_may17_fuxi_ecmwf_arco.py \
 Outputs:
 
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_rainfall_fuxi_ecmwf_arco.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_rainfall_paperstyle_fuxi_ecmwf_arco.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_4panel_fuxi_ecmwf_arco.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_bias_4panel_fuxi_ecmwf_arco.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_timeseries.csv`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_fields.nc`
 
-For lead days `1-30`, the all-India cumulative totals are: ARCO ERA5 `70.7 mm`, FuXi-S2S ensemble mean `33.9 mm`, and ECMWF-S2S ensemble mean `95.1 mm`.
+For lead days `1-30`, the all-India cumulative totals are: ARCO ERA5 `70.7 mm`, FuXi-S2S ensemble mean `33.9 mm`, FuXi member 00 `64.3 mm`, ECMWF-S2S ensemble mean `95.1 mm`, and ECMWF control `87.1 mm`.
