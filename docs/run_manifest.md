@@ -319,6 +319,8 @@ Note: FuXi `tp` is clipped at zero and multiplied by `24` in the shared unit con
 
 The whole-region outputs use `--no-mask-to-india`; shaded values remain visible over the full plotted domain while India/state boundaries are still overlaid.
 
+Figure text convention: forecast rainfall maps are labeled as the 50-member FuXi S2S ensemble weekly mean, while anomaly maps are labeled as the 50-member forecast weekly mean minus the 20-year FuXi S2S climatology for 2002-2021.
+
 ## 2026-07-09: Four-Week Whole-Region Rainfall Maps
 
 Command:

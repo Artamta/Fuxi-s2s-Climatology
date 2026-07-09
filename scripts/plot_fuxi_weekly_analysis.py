@@ -118,6 +118,56 @@ def week_output_tag(week_numbers: np.ndarray) -> str:
     return "weeks" + "-".join(str(item) for item in weeks)
 
 
+def forecast_member_label(ds: xr.Dataset) -> str:
+    members_raw = str(ds.attrs.get("forecast_members", "")).strip()
+    members = [item.strip() for item in members_raw.split(",") if item.strip()]
+    return f"{len(members)}-member" if members else "ensemble"
+
+
+def climatology_label(ds: xr.Dataset) -> str:
+    years_raw = str(ds.attrs.get("climatology_years", "")).strip()
+    climatology_file = ds.attrs.get("climatology_file")
+    if not years_raw and climatology_file:
+        path = Path(str(climatology_file))
+        if path.exists():
+            with xr.open_dataset(path) as clim:
+                years_raw = str(clim.attrs.get("years", "")).strip()
+
+    years = [int(item.strip()) for item in years_raw.split(",") if item.strip().isdigit()]
+    if years:
+        count = len(years)
+        year_range = f"{min(years)}-{max(years)}"
+        return f"{count}-year FuXi S2S climatology ({year_range})"
+    return "FuXi S2S climatology"
+
+
+def product_subtitle_and_note(product: str, ds: xr.Dataset) -> tuple[str, str]:
+    member_label = forecast_member_label(ds)
+    clim_label = climatology_label(ds)
+
+    if product in {"tp_forecast", "tp_actual"}:
+        return (
+            "FuXi S2S ensemble mean",
+            f"Weekly mean rainfall rate (mm/day): {member_label} ensemble mean averaged over each 7-day lead week.",
+        )
+    if product == "tp_anomaly":
+        return (
+            f"FuXi S2S ensemble mean anomaly vs {clim_label}",
+            f"Weekly mean anomaly (mm/day): {member_label} forecast weekly mean minus {clim_label}.",
+        )
+    if product == "t2m_forecast":
+        return (
+            "FuXi S2S ensemble mean",
+            f"Weekly mean 2m temperature (degC): {member_label} ensemble mean averaged over each 7-day lead week.",
+        )
+    if product == "t2m_anomaly":
+        return (
+            f"FuXi S2S ensemble mean anomaly vs {clim_label}",
+            f"Weekly mean 2m temperature anomaly (degC): {member_label} forecast weekly mean minus {clim_label}.",
+        )
+    raise ValueError(f"unsupported product: {product}")
+
+
 def listed_cmap(name: str, colors: list[str], under: str | None = None, over: str | None = None) -> mcolors.Colormap:
     cmap = mcolors.ListedColormap(colors, name=name)
     if under is not None:
@@ -268,7 +318,7 @@ def product_style(product: str, rainfall_scale: str, temperature_actual_scale: s
         return {
             "variable": "tp",
             "data": "forecast_weekly",
-            "title": "Actual Rainfall (mm/day)" if product == "tp_actual" else "Forecast Rainfall (mm/day)",
+            "title": "FuXi S2S Forecast",
             "suffix": "tp_actual" if product == "tp_actual" else "tp_forecast",
             "levels": levels,
             "cmap": imd_rainfall_actual_cmap() if rainfall_scale == "imd" else imd_green_cmap(len(levels) - 1),
@@ -283,7 +333,7 @@ def product_style(product: str, rainfall_scale: str, temperature_actual_scale: s
         return {
             "variable": "tp",
             "data": "anomaly_weekly",
-            "title": "Forecast Rainfall Anomaly (mm/day)",
+            "title": "FuXi S2S Anomaly",
             "suffix": "tp_anomaly",
             "levels": levels,
             "cmap": imd_anomaly_cmap(),
@@ -363,8 +413,10 @@ def plot_product(
     fig = plt.figure(figsize=(8.4, fig_height), facecolor="white")
     gs = fig.add_gridspec(nrows=panel_rows + 1, ncols=2, height_ratios=[1] * panel_rows + [0.09], hspace=0.34, wspace=0.15)
     title = title_overrides.get(product, style["title"])
+    subtitle, note = product_subtitle_and_note(product, ds)
     fig.text(0.04, 0.965, f"{title}  IC={ic_date}", color="#e33b3b", fontsize=14, fontweight="bold", ha="left")
-    fig.text(0.5, 0.935, "FuXi-S2S ensemble mean | June-17 model climatology", color="#0026cc", fontsize=10.5, ha="center", fontweight="bold")
+    fig.text(0.5, 0.935, subtitle, color="#0026cc", fontsize=10.0, ha="center", fontweight="bold")
+    fig.text(0.5, 0.018, note, color="#343434", fontsize=7.4, ha="center")
 
     mappable = None
     for plot_idx in range(panel_count):

@@ -161,6 +161,8 @@ The rainfall plot defaults to a FuXi-readable rainfall scale for quick field ins
 
 The IMD colorbar colors were sampled from the current ERPAS image assets linked by the IMD extended-range page, including `rfactual`, `rfanom`, `tmaxactual`, `tminactual`, `tmaxanom`, and `tminanom`.
 
+Rainfall figure subtitles/footers distinguish the products: forecast maps are labeled as the 50-member FuXi S2S ensemble weekly mean, while anomaly maps are labeled as that forecast weekly mean minus the 20-year FuXi S2S climatology for 2002-2021.
+
 Note: these FuXi forecast files contain `t2m` and `tp`; they do not contain true daily Tmin/Tmax channels. The current temperature maps are therefore `t2m` actual and `t2m` anomaly, not Tmin/Tmax.
 
 ## PPT-Ready Four-Week Slides
