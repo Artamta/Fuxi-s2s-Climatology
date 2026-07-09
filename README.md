@@ -367,3 +367,25 @@ Outputs:
 - `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517_availability.json`
 
 Current ARCO status for this IC: complete daily `tp` truth is available for lead days `1-30` (`2026-05-18` through `2026-06-16`). Lead day `31` is incomplete because ARCO currently has only `2026-06-17 00Z`, not the full UTC day, and lead days `32-42` are unavailable. The NetCDF therefore stores only complete daily totals, with the unavailable days recorded in the CSV/JSON sidecars.
+
+Download matching ECMWF-S2S `tp` forecast data for the same IC:
+
+```bash
+/home/raj.ayush/.conda/envs/fuxi/bin/python scripts/download_ecmwf_s2s_tp.py \
+  --ic-date 20260517 \
+  --lead-days 42 \
+  --raw-dir /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/raw \
+  --processed-dir /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed \
+  --members 50
+```
+
+Raw outputs:
+
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/raw/tp/20260517_cf.nc`
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/raw/tp/20260517_pf.nc`
+
+Processed comparable output:
+
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed/ecmwf_20260517_tp_ens50_lead42_india_1p5deg_daily_mm.nc`
+
+The raw ECMWF `tp` files are accumulated precipitation in `kg m**-2`, which is numerically equivalent to millimetres of water. The processed file uses the first 50 perturbed members only, differences the cumulative field into daily increments, clips tiny negative packing artifacts to zero, and stores `tp(member, lead_time, lat, lon)` in `mm/day`.

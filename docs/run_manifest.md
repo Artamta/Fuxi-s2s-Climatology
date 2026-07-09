@@ -589,3 +589,63 @@ Range check over the downloaded domain:
 - min: `0.00 mm/day`
 - mean: `4.78 mm/day`
 - max: `283.12 mm/day`
+
+## 2026-07-09: May-17 ECMWF-S2S Total Precipitation Forecast
+
+Purpose: download ECMWF-S2S `tp` for the same `20260517` IC as the FuXi verification run and prepare a FuXi-comparable daily rainfall product.
+
+Command:
+
+```bash
+/home/raj.ayush/.conda/envs/fuxi/bin/python scripts/download_ecmwf_s2s_tp.py \
+  --ic-date 20260517 \
+  --lead-days 42 \
+  --raw-dir /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/raw \
+  --processed-dir /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed \
+  --members 50 \
+  --retries 2 \
+  --sleep-between 1 \
+  --overwrite
+```
+
+Raw outputs:
+
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/raw/tp/20260517_cf.nc`
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/raw/tp/20260517_pf.nc`
+
+Processed outputs:
+
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed/ecmwf_20260517_tp_ens50_lead42_india_1p5deg_daily_mm.nc`
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed/ecmwf_20260517_tp_download_manifest.json`
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed/ecmwf_20260517_tp_ens50_lead42_summary.csv`
+
+NetCDF contents:
+
+- raw `cf`: `step=42, latitude=27, longitude=27`
+- raw `pf`: `number=100, step=42, latitude=27, longitude=27`
+- processed: `member=50, lead_time=42, lat=27, lon=27`
+- valid dates: `2026-05-18` through `2026-06-28`
+- grid/domain: `1.5 deg`, `40N-0N, 60E-100E`
+
+Method:
+
+- raw ECMWF `tp` is accumulated precipitation in `kg m**-2`, numerically equal to millimetres of water
+- processed file uses the first 50 perturbed ECMWF members to match the FuXi 50-member case
+- daily `mm/day` is produced by differencing accumulated `tp` along lead time
+- tiny negative packing artifacts are clipped to zero
+
+Range check for processed daily rainfall:
+
+- min: `0.00 mm/day`
+- mean: `4.91 mm/day`
+- max: `533.52 mm/day`
+
+Consistency check:
+
+- cumulative sum of the processed daily increments reproduces the raw accumulated ECMWF field for the first 50 perturbed members
+- maximum absolute float32 difference: `0.086 mm`
+
+Comparison window:
+
+- ECMWF forecast is present for all `42` lead days
+- ARCO ERA5 truth is complete for lead days `1-30`, so clean ECMWF/FuXi/truth verification is currently lead days `1-30`
