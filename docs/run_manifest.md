@@ -419,3 +419,48 @@ Availability result for IC `20190627`:
 - historical IMD observed cumulative rainfall is present for all `42` lead days
 
 Note: the 2026 product is therefore forecast/climatology-only for now, with an availability JSON. Rerun the same command when IMERG or newer ERA5 data is available.
+
+## 2026-07-09: June-17 IC Cumulative Rainfall
+
+Command:
+
+```bash
+python scripts/make_june17_cumulative_rainfall.py \
+  --ic-date 20260617 \
+  --members 0:49 \
+  --current-date 2026-07-09 \
+  --output-dir outputs/june17_cumulative_rainfall
+```
+
+Outputs:
+
+- `outputs/june17_cumulative_rainfall/20260617_india_cumulative_rainfall_fuxi_available_truth.png`
+- `outputs/june17_cumulative_rainfall/20260617_india_cumulative_rainfall.csv`
+- `outputs/june17_cumulative_rainfall/20260617_truth_availability.json`
+
+Inputs:
+
+- FuXi raw forecast: `/storage/raj.ayush/All_Model_Data/fuxi/test/raw/20260617`
+- FuXi members: `00-49`
+- FuXi samples: `50 members x 42 lead days`
+- FuXi rainfall units: `mm/day = clip(raw tp, 0) * 24`
+- India mask: local India/state shapefile through `prepare_india_geometries`
+
+Final 42-day all-India cumulative totals:
+
+- FuXi ensemble mean: `267.95 mm`
+- FuXi p10-p90 member range: `236.78-297.72 mm`
+- FuXi member 00: `273.71 mm`
+- FuXi June-17 model climatology: `103.49 mm`
+- IMD 1991-2020 climatology: `340.09 mm`
+
+Truth availability on `2026-07-09`:
+
+- local IMD observed status: `2026:missing`
+- observed days plotted: `0`
+- local IMERG: not found/provided
+- local ERA5: does not cover the June-July 2026 valid window
+- ARCO ERA5: previously seen available only through `2026-06-17`, before the valid window starts
+- GFS: not found locally
+
+Note: the figure is ready for partial verification. When IMERG, ERA5, GFS analysis, or IMD observed rainfall is available, add the source and rerun the same workflow to draw the real cumulative line through the available dates.

@@ -282,6 +282,26 @@ python scripts/make_case_study_cumulative_obs_compare.py \
 
 Current status for `20260623`: no local IMERG file was found/provided, local IMD observed rainfall only goes through `2025`, and ARCO ERA5 rejected the first valid date `2026-06-24` because its latest available date was `2026-06-17`. The script still writes a forecast/climatology figure plus an availability JSON so it can be rerun when observations arrive.
 
+## June-17 IC Cumulative Rainfall
+
+For the June-17 FuXi-S2S IC, make an all-India cumulative rainfall line plot directly from the 50-member raw forecast tree:
+
+```bash
+python scripts/make_june17_cumulative_rainfall.py \
+  --ic-date 20260617 \
+  --members 0:49 \
+  --current-date 2026-07-09 \
+  --output-dir outputs/june17_cumulative_rainfall
+```
+
+Outputs:
+
+- `outputs/june17_cumulative_rainfall/20260617_india_cumulative_rainfall_fuxi_available_truth.png`
+- `outputs/june17_cumulative_rainfall/20260617_india_cumulative_rainfall.csv`
+- `outputs/june17_cumulative_rainfall/20260617_truth_availability.json`
+
+Current status: FuXi forecast, FuXi June-17 model climatology, and IMD 1991-2020 rainfall climatology are plotted. No real observed line is plotted yet because local IMD observed rainfall has no `2026` file, no local IMERG file was found/provided, local ERA5 files do not cover June-July 2026, and ARCO ERA5 was previously only available through `2026-06-17`.
+
 ## Notes
 
 - Exact June 17 FuXi model forecast archives do not exist in the downloaded FuXi archive cadence, so we generate exact June 17 ICs ourselves.
