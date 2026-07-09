@@ -324,3 +324,26 @@ Current status: FuXi forecast, FuXi June-17 model climatology, and IMD 1991-2020
 - Input generation uses ARCO ERA5 through Earth2Studio and mirrors FuXi `data_util.make_input` conventions.
 - FuXi `tp` is clipped at zero and multiplied by `24` to make the plotted/products units `mm/day`.
 - `ttr` is divided by `3600`.
+
+## May-17 Verification Case
+
+For a previous-month case with more observation availability, generate a single FuXi IC for `20260517` and run a 50-member forecast:
+
+```bash
+/home/raj.ayush/.conda/envs/earth2/bin/python scripts/make_june17_inputs.py \
+  --years 2026 \
+  --mmdd 0517 \
+  --output-dir /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/inputs \
+  --timeout 1800
+
+python scripts/validate_fuxi_inputs.py \
+  --input-dir /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/inputs \
+  --years 2026 \
+  --mmdd 0517
+```
+
+Forecast output root:
+
+`/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/raw/20260517`
+
+Current status: `20260517` has a complete 50-member x 42-lead-day FuXi forecast under the May-17 storage folder, and the raw tree passed `scripts/check_smoke_output.py`.

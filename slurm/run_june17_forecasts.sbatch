@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run FuXi-S2S forecasts for the configured June 17 hindcast dates.
+# Run FuXi-S2S forecasts for configured dates.
 #
 # Default is the recommended initial climatology run:
 #   all 20 dates x 42 lead steps x 11 members
@@ -29,7 +29,7 @@ set -euo pipefail
 REPO="/home/raj.ayush/s2s/fuxi_s2s_Hindcast"
 FUXI_DIR="/home/raj.ayush/s2s/s2s_anlysis/analysis-code/data-download/fuxi_s2s/FuXi-S2S"
 FUXI_PY="/home/raj.ayush/.conda/envs/fuxi_s2s/bin/python"
-CHECK_PY="${FUXI_CHECK_PY:-python}"
+CHECK_PY="${FUXI_CHECK_PY:-${FUXI_PY}}"
 
 DATES_FILE="${FUXI_DATES_FILE:-${REPO}/config/june17_dates_2002_2021.txt}"
 INPUT_ROOT="${FUXI_INPUT_ROOT:-${REPO}/data/ic_inputs}"
@@ -64,7 +64,7 @@ if [[ ! -s "${INPUT_FILE}" ]]; then
 fi
 
 echo "============================================================"
-echo "FuXi-S2S June 17 hindcast"
+echo "FuXi-S2S forecast"
 echo "Job ID    : ${SLURM_JOB_ID:-manual}"
 echo "Task ID   : ${TASK_ID}"
 echo "Node      : $(hostname)"

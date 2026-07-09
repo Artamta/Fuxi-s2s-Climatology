@@ -487,3 +487,61 @@ Truth availability on `2026-07-09`:
 - GFS: not found locally
 
 Note: the figure is ready for partial verification. When IMERG, ERA5, GFS analysis, or IMD observed rainfall is available, add the source and rerun the same workflow to draw the real cumulative line through the available dates.
+
+## 2026-07-09: May-17 Verification IC And Forecast
+
+Purpose: create a previous-month verification case where ground truth should be available for more of the 42-day forecast window than the June-17 real-time case.
+
+Input command:
+
+```bash
+/home/raj.ayush/.conda/envs/earth2/bin/python scripts/make_june17_inputs.py \
+  --years 2026 \
+  --mmdd 0517 \
+  --output-dir /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/inputs \
+  --timeout 1800
+```
+
+Input written:
+
+- `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/inputs/20260517/input.nc`
+- shape: `2 x 76 x 121 x 240`
+- times: `2026-05-16 00Z`, `2026-05-17 00Z`
+- grid: native FuXi `1.5 deg`
+
+Validation command:
+
+```bash
+python scripts/validate_fuxi_inputs.py \
+  --input-dir /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/inputs \
+  --years 2026 \
+  --mmdd 0517
+```
+
+Validation result:
+
+- `20260517: OK - ok size=16.9 MiB`
+
+Forecast submission:
+
+```bash
+sbatch \
+  --job-name=fuxi_20260517_ens50 \
+  --array=1-1%1 \
+  --output=/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/logs/fuxi_20260517_%A_%a.out \
+  --error=/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/logs/fuxi_20260517_%A_%a.err \
+  --export=ALL,FUXI_DATES_FILE=/home/raj.ayush/s2s/fuxi_s2s_Hindcast/config/may17_dates_2026.txt,FUXI_INPUT_ROOT=/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/inputs,FUXI_OUTPUT_ROOT=/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17,FUXI_MEMBERS=50,FUXI_STEPS=42,FUXI_SEED=42,FUXI_OVERWRITE=0,FUXI_CHECK_PY=/home/raj.ayush/.conda/envs/fuxi_s2s/bin/python \
+  slurm/run_june17_forecasts.sbatch
+```
+
+Submitted job:
+
+- job id: `65914`
+- state at launch check: `RUNNING` on `gpu1`
+- model runtime: `8.9 min`
+- model output: `50 members x 42 lead days = 2100 NetCDF files`
+- output size: `18G`
+- output root: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/raw/20260517`
+- manual validation: `SMOKE CHECK OK: 50 member(s) x 42 step(s)`
+
+Note: job `65914` was launched before the runner default was patched to use the FuXi Python for post-run checking, so SLURM marked the batch step failed after the model completed. The raw forecast tree is complete and passed the manual checker.
