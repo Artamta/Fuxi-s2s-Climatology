@@ -319,6 +319,27 @@ Note: FuXi `tp` is clipped at zero and multiplied by `24` in the shared unit con
 
 The whole-region outputs use `--no-mask-to-india`; shaded values remain visible over the full plotted domain while India/state boundaries are still overlaid.
 
+## 2026-07-09: Four-Week Whole-Region Rainfall Maps
+
+Command:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --products tp_actual,tp_anomaly \
+  --rainfall-scale imd \
+  --no-mask-to-india \
+  --weeks 1-4 \
+  --product-title 'tp_actual=FuXi S2S Forecast' \
+  --product-title 'tp_anomaly=FuXi S2S Anomaly' \
+  --output-dir outputs/rainfall_6week_20260617_whole_region_imdscale
+```
+
+Outputs:
+
+- `outputs/rainfall_6week_20260617_whole_region_imdscale/fuxi_tp_actual_20260617_4week.png`
+- `outputs/rainfall_6week_20260617_whole_region_imdscale/fuxi_tp_anomaly_20260617_4week.png`
+
 ## 2026-07-09: Whole-Region Six-Week Temperature Maps
 
 2m temperature actual/anomaly command:

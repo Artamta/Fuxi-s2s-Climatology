@@ -44,6 +44,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-mask-to-india", action="store_true")
     parser.add_argument("--rainfall-scale", choices=("fuxi", "imd"), default="fuxi")
     parser.add_argument("--temperature-actual-scale", choices=("tmax", "tmin", "legacy"), default="tmax")
+    parser.add_argument("--weeks", help="Week numbers to plot, for example 1-4 or 1,2,3,4. Default plots all weeks.")
+    parser.add_argument(
+        "--product-title",
+        action="append",
+        default=[],
+        metavar="PRODUCT=TITLE",
+        help="Override the top title for a product, for example tp_actual='FuXi S2S Forecast'.",
+    )
     return parser.parse_args()
 
 
@@ -51,6 +59,63 @@ def week_label(init: datetime, week_index: int, start_day: int, end_day: int) ->
     start = init + timedelta(days=int(start_day))
     end = init + timedelta(days=int(end_day))
     return f"(Week{week_index}: 00Z{start:%d%b}-00Z{end:%d%b})"
+
+
+def parse_week_indices(raw_weeks: str | None, available_weeks: np.ndarray) -> np.ndarray:
+    if not raw_weeks:
+        return np.arange(len(available_weeks), dtype=np.int32)
+
+    requested: list[int] = []
+    for chunk in raw_weeks.split(","):
+        item = chunk.strip()
+        if not item:
+            continue
+        if "-" in item:
+            start_text, end_text = item.split("-", 1)
+            start = int(start_text)
+            end = int(end_text)
+            if end < start:
+                raise ValueError(f"week range must increase: {item}")
+            requested.extend(range(start, end + 1))
+        else:
+            requested.append(int(item))
+
+    if not requested:
+        raise ValueError("--weeks did not contain any week numbers")
+
+    week_to_index = {int(week): idx for idx, week in enumerate(available_weeks)}
+    missing = [week for week in requested if week not in week_to_index]
+    if missing:
+        available_text = ",".join(str(int(item)) for item in available_weeks)
+        missing_text = ",".join(str(item) for item in missing)
+        raise ValueError(f"requested week(s) {missing_text} not available; available weeks: {available_text}")
+
+    # Preserve order while removing duplicates.
+    deduped = list(dict.fromkeys(requested))
+    return np.asarray([week_to_index[week] for week in deduped], dtype=np.int32)
+
+
+def parse_title_overrides(entries: list[str]) -> dict[str, str]:
+    overrides: dict[str, str] = {}
+    for entry in entries:
+        if "=" not in entry:
+            raise ValueError(f"--product-title must use PRODUCT=TITLE format: {entry}")
+        product, title = entry.split("=", 1)
+        product = product.strip()
+        title = title.strip()
+        if product not in PRODUCTS:
+            raise ValueError(f"unknown product title override: {product}")
+        if not title:
+            raise ValueError(f"empty title override for {product}")
+        overrides[product] = title
+    return overrides
+
+
+def week_output_tag(week_numbers: np.ndarray) -> str:
+    weeks = [int(item) for item in week_numbers]
+    if weeks == list(range(1, len(weeks) + 1)):
+        return f"{len(weeks)}week"
+    return "weeks" + "-".join(str(item) for item in weeks)
 
 
 def listed_cmap(name: str, colors: list[str], under: str | None = None, over: str | None = None) -> mcolors.Colormap:
@@ -272,11 +337,16 @@ def plot_product(
     mask_india: bool,
     rainfall_scale: str,
     temperature_actual_scale: str,
+    week_indices: np.ndarray,
+    title_overrides: dict[str, str],
 ) -> Path:
     style = product_style(product, rainfall_scale, temperature_actual_scale)
     ic_date = str(ds.attrs.get("ic_date", "unknown"))
     init = datetime.strptime(ic_date, "%Y%m%d")
-    data = ds[style["data"]].sel(variable=style["variable"]).values.astype("float32")
+    data = ds[style["data"]].sel(variable=style["variable"]).values.astype("float32")[week_indices]
+    week_numbers = ds.week.values[week_indices]
+    week_start_day = ds.week_start_day.values[week_indices]
+    week_end_day = ds.week_end_day.values[week_indices]
     lat = ds.lat.values.astype("float32")
     lon = ds.lon.values.astype("float32")
     grid = Grid(lat=lat, lon=lon)
@@ -287,18 +357,22 @@ def plot_product(
     levels = style["levels"]
     cmap = style["cmap"]
     norm = mcolors.BoundaryNorm(levels, cmap.N)
-    fig = plt.figure(figsize=(8.4, 11.4), facecolor="white")
-    gs = fig.add_gridspec(nrows=4, ncols=2, height_ratios=[1, 1, 1, 0.09], hspace=0.34, wspace=0.15)
-    fig.text(0.04, 0.965, f"{style['title']}  IC={ic_date}", color="#e33b3b", fontsize=14, fontweight="bold", ha="left")
+    panel_count = data.shape[0]
+    panel_rows = int(np.ceil(panel_count / 2))
+    fig_height = 3.45 * panel_rows + 1.05
+    fig = plt.figure(figsize=(8.4, fig_height), facecolor="white")
+    gs = fig.add_gridspec(nrows=panel_rows + 1, ncols=2, height_ratios=[1] * panel_rows + [0.09], hspace=0.34, wspace=0.15)
+    title = title_overrides.get(product, style["title"])
+    fig.text(0.04, 0.965, f"{title}  IC={ic_date}", color="#e33b3b", fontsize=14, fontweight="bold", ha="left")
     fig.text(0.5, 0.935, "FuXi-S2S ensemble mean | June-17 model climatology", color="#0026cc", fontsize=10.5, ha="center", fontweight="bold")
 
     mappable = None
-    for week_idx in range(data.shape[0]):
-        ax = fig.add_subplot(gs[week_idx // 2, week_idx % 2], projection=ccrs.PlateCarree())
+    for plot_idx in range(panel_count):
+        ax = fig.add_subplot(gs[plot_idx // 2, plot_idx % 2], projection=ccrs.PlateCarree())
         mappable = ax.contourf(
             lon,
             lat,
-            data[week_idx],
+            data[plot_idx],
             levels=levels,
             cmap=cmap,
             norm=norm,
@@ -307,18 +381,18 @@ def plot_product(
         )
         add_map(ax, bbox, map_scale, draw_states, india_outline_geoms, india_state_geoms)
         ax.set_title(
-            week_label(init, week_idx + 1, int(ds.week_start_day.values[week_idx]), int(ds.week_end_day.values[week_idx])),
+            week_label(init, int(week_numbers[plot_idx]), int(week_start_day[plot_idx]), int(week_end_day[plot_idx])),
             fontsize=10,
             color="#0a41ff",
             pad=4,
             fontweight="bold",
         )
 
-    cax = fig.add_subplot(gs[3, :])
+    cax = fig.add_subplot(gs[panel_rows, :])
     cb = fig.colorbar(mappable, cax=cax, orientation="horizontal", ticks=levels)
     cb.ax.tick_params(labelsize=10, length=4, pad=3)
     output_dir.mkdir(parents=True, exist_ok=True)
-    output = output_dir / f"fuxi_{style['suffix']}_{ic_date}_6week.png"
+    output = output_dir / f"fuxi_{style['suffix']}_{ic_date}_{week_output_tag(week_numbers)}.png"
     fig.savefig(output, dpi=dpi, bbox_inches="tight")
     plt.close(fig)
     print(f"wrote {output}")
@@ -331,6 +405,10 @@ def main() -> int:
     unknown = sorted(set(products) - set(PRODUCTS))
     if unknown:
         raise SystemExit(f"unknown product(s): {','.join(unknown)}")
+    try:
+        title_overrides = parse_title_overrides(args.product_title)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
     india_outline_geoms, india_state_geoms = prepare_india_geometries(
         args.map_scale,
         args.india_shapefile,
@@ -338,6 +416,10 @@ def main() -> int:
         args.draw_districts,
     )
     with xr.open_dataset(args.analysis_file) as ds:
+        try:
+            week_indices = parse_week_indices(args.weeks, ds.week.values)
+        except ValueError as exc:
+            raise SystemExit(str(exc)) from exc
         for product in products:
             plot_product(
                 ds=ds,
@@ -352,6 +434,8 @@ def main() -> int:
                 mask_india=not args.no_mask_to_india,
                 rainfall_scale=args.rainfall_scale,
                 temperature_actual_scale=args.temperature_actual_scale,
+                week_indices=week_indices,
+                title_overrides=title_overrides,
             )
     return 0
 

@@ -233,6 +233,20 @@ python scripts/plot_fuxi_weekly_analysis.py \
   --output-dir outputs/rainfall_6week_20260617_whole_region_imdscale
 ```
 
+Four-week versions of the same whole-region rainfall maps can be written into the same folder:
+
+```bash
+python scripts/plot_fuxi_weekly_analysis.py \
+  /storage/raj.ayush/fuxi_s2s_Hindcast_outputs/analysis/fuxi_weekly_analysis_20260617.nc \
+  --products tp_actual,tp_anomaly \
+  --rainfall-scale imd \
+  --no-mask-to-india \
+  --weeks 1-4 \
+  --product-title 'tp_actual=FuXi S2S Forecast' \
+  --product-title 'tp_anomaly=FuXi S2S Anomaly' \
+  --output-dir outputs/rainfall_6week_20260617_whole_region_imdscale
+```
+
 ## Whole-Region Six-Week Temperature Maps
 
 For 2m temperature actual/anomaly maps over the full plotted region:
