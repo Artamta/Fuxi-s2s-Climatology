@@ -650,9 +650,9 @@ Comparison window:
 - ECMWF forecast is present for all `42` lead days
 - ARCO ERA5 truth is complete for lead days `1-30`, so clean ECMWF/FuXi/truth verification is currently lead days `1-30`
 
-## 2026-07-09: May-17 FuXi/ECMWF/ARCO Verification Plots
+## 2026-07-09: May-17 FuXi/ECMWF/ERA5 GT Verification Plots
 
-Purpose: make a compact verification package for the clean May-17 observed window where FuXi, ECMWF, and ARCO ERA5 are all available.
+Purpose: make a compact verification package for the clean May-17 observed window where FuXi, ECMWF, and ERA5 ground truth are all available.
 
 Command:
 
@@ -669,7 +669,7 @@ Inputs:
 - FuXi raw forecast: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/raw/20260517`
 - FuXi members: `00-49`
 - ECMWF processed forecast: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed/ecmwf_20260517_tp_ens50_lead42_india_1p5deg_daily_mm.nc`
-- ARCO ERA5 truth: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517.nc`
+- ERA5 GT source: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517.nc`
 - IMD rainfall climatology: `/storage/raj.ayush/All_Model_Data/ground_truth/imd_rainfall/climatology/imd_rain_1991_2020_daily_climatology.nc`
 
 Outputs:
@@ -686,12 +686,12 @@ Figure set:
 
 - cumulative all-India rainfall line plot for lead days `1-30`, now including the IMD 1991-2020 climatology reference
 - paper-style cumulative all-India rainfall plot matching the final-paper case-study layout, including endpoint labels, FuXi member 00, ECMWF control, and IMD climatology
-- four-panel spatial cumulative rainfall map: ARCO truth, FuXi mean, ECMWF mean, FuXi minus ECMWF
-- four-panel spatial bias map: ARCO truth, FuXi minus ARCO, ECMWF minus ARCO, FuXi minus ECMWF
+- four-panel spatial cumulative rainfall map: ERA5 GT, FuXi mean, ECMWF mean, FuXi minus ECMWF
+- four-panel spatial bias map: ERA5 GT, FuXi minus ERA5 GT, ECMWF minus ERA5 GT, FuXi minus ECMWF
 
 Final all-India cumulative rainfall through lead day `30`:
 
-- ARCO ERA5 truth: `70.74 mm`
+- ERA5 GT: `70.74 mm`
 - FuXi-S2S ensemble mean: `33.91 mm`
 - FuXi member 00: `64.30 mm`
 - ECMWF-S2S ensemble mean: `95.13 mm`
@@ -703,4 +703,4 @@ Notes:
 - line-plot means are area-weighted over India using the local India/state shapefile geometry
 - IMD climatology is a 1991-2020 daily rainfall normal for the same valid month-days (`18 May-16 Jun`), not an observed truth line
 - spatial maps shade the full plotted domain by default and overlay India/state boundaries
-- ARCO truth is interpolated to the model grid only for bias panels and cached fields
+- ERA5 GT is interpolated to the model grid only for bias panels and cached fields

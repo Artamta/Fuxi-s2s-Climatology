@@ -378,7 +378,7 @@ def plot_cumulative(df: pd.DataFrame, ic_date: str, output: Path) -> Path:
     ax.plot(x, df["fuxi_cumulative_ens_mean_mm"], color=COLORS["fuxi"], lw=3.0, label="FuXi-S2S ensemble mean")
     ax.fill_between(x, df["ecmwf_cumulative_p10_mm"], df["ecmwf_cumulative_p90_mm"], color=COLORS["ecmwf"], alpha=0.16, linewidth=0)
     ax.plot(x, df["ecmwf_cumulative_ens_mean_mm"], color=COLORS["ecmwf"], lw=3.0, label="ECMWF-S2S ensemble mean")
-    ax.plot(x, df["arco_cumulative_mm"], color=COLORS["arco"], lw=3.2, label="ARCO ERA5 truth")
+    ax.plot(x, df["arco_cumulative_mm"], color=COLORS["arco"], lw=3.2, label="ERA5 GT")
     if "imd_1991_2020_climatology_cumulative_mm" in df.columns:
         ax.plot(
             x,
@@ -414,14 +414,14 @@ def plot_cumulative(df: pd.DataFrame, ic_date: str, output: Path) -> Path:
     fig.text(
         0.055,
         0.925,
-        f"IC {ic_date} | lead days 1-{int(x[-1])} | ARCO ERA5 complete truth window | IMD climatology reference | area-weighted India mean",
+        f"IC {ic_date} | lead days 1-{int(x[-1])} | ERA5 GT complete truth window | IMD climatology reference | area-weighted India mean",
         fontsize=11.4,
         color=COLORS["muted"],
     )
     fig.text(
         0.055,
         0.045,
-        "Shaded bands show member p10-p90. FuXi and ECMWF both use 50 perturbed members; ARCO ERA5 uses daily totals from 24 hourly fields.",
+        "Shaded bands show member p10-p90. FuXi and ECMWF both use 50 perturbed members; ERA5 GT uses daily totals from 24 hourly fields.",
         fontsize=9.2,
         color=COLORS["muted"],
     )
@@ -462,7 +462,7 @@ def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) ->
 
     ax.fill_between(x, df["fuxi_cumulative_p10_mm"], df["fuxi_cumulative_p90_mm"], color=COLORS["fuxi"], alpha=0.12, linewidth=0)
     ax.fill_between(x, df["ecmwf_cumulative_p10_mm"], df["ecmwf_cumulative_p90_mm"], color=COLORS["ecmwf"], alpha=0.14, linewidth=0)
-    ax.plot(x, df["arco_cumulative_mm"], color=COLORS["arco"], lw=3.1, label="ARCO ERA5 truth")
+    ax.plot(x, df["arco_cumulative_mm"], color=COLORS["arco"], lw=3.1, label="ERA5 GT")
     ax.plot(x, df["fuxi_cumulative_ens_mean_mm"], color=COLORS["fuxi"], lw=3.0, label="FuXi-S2S ensemble mean")
     ax.plot(x, df["fuxi_member00_cumulative_mm"], color=COLORS["fuxi_dark"], lw=2.4, ls=(0, (7, 5)), label="FuXi member 00")
     ax.plot(x, df["ecmwf_cumulative_ens_mean_mm"], color=COLORS["ecmwf"], lw=3.0, label="ECMWF-S2S ensemble mean")
@@ -512,14 +512,14 @@ def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) ->
     final_x = float(x[-1])
     final_values = {
         "ECMWF": float(df["ecmwf_cumulative_ens_mean_mm"].iloc[-1]),
-        "ARCO": float(df["arco_cumulative_mm"].iloc[-1]),
+        "ERA5 GT": float(df["arco_cumulative_mm"].iloc[-1]),
         "FuXi": float(df["fuxi_cumulative_ens_mean_mm"].iloc[-1]),
     }
     if "imd_1991_2020_climatology_cumulative_mm" in df.columns:
         final_values["IMD"] = float(df["imd_1991_2020_climatology_cumulative_mm"].iloc[-1])
     offsets = endpoint_offsets(final_values)
     annotate_endpoint(ax, final_x, final_values["ECMWF"], f"ECMWF {final_values['ECMWF']:.0f} mm", COLORS["ecmwf"], offset=offsets["ECMWF"])
-    annotate_endpoint(ax, final_x, final_values["ARCO"], f"ARCO {final_values['ARCO']:.0f} mm", COLORS["arco"], offset=offsets["ARCO"])
+    annotate_endpoint(ax, final_x, final_values["ERA5 GT"], f"ERA5 GT {final_values['ERA5 GT']:.0f} mm", COLORS["arco"], offset=offsets["ERA5 GT"])
     annotate_endpoint(ax, final_x, final_values["FuXi"], f"FuXi {final_values['FuXi']:.0f} mm", COLORS["fuxi"], offset=offsets["FuXi"])
     if "IMD" in final_values:
         annotate_endpoint(ax, final_x, final_values["IMD"], f"IMD clim {final_values['IMD']:.0f} mm", COLORS["imd_clim"], offset=offsets["IMD"])
@@ -531,14 +531,14 @@ def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) ->
         0.925,
         f"Initialized {pd.Timestamp(datetime.strptime(ic_date, '%Y%m%d')).strftime('%-d %b %Y')} | "
         f"valid {valid_dates.iloc[0].strftime('%-d %b')}-{valid_dates.iloc[-1].strftime('%-d %b')} | "
-        "FuXi-S2S and ECMWF-S2S versus ARCO ERA5 truth and IMD climatology",
+        "FuXi-S2S and ECMWF-S2S versus ERA5 GT and IMD climatology",
         fontsize=12,
         color=COLORS["muted"],
     )
     fig.text(
         0.055,
         0.035,
-        "ARCO ERA5 truth is available as complete daily totals through lead day 30; IMD line is 1991-2020 daily rainfall climatology; shaded bands show member p10-p90.",
+        "ERA5 GT is available as complete daily totals through lead day 30; IMD line is 1991-2020 daily rainfall climatology; shaded bands show member p10-p90.",
         fontsize=8.8,
         color=COLORS["muted"],
     )
@@ -601,7 +601,7 @@ def plot_spatial(
     fig = plt.figure(figsize=(12.6, 10.3), facecolor="white")
     gs = fig.add_gridspec(nrows=3, ncols=2, height_ratios=[1, 1, 0.08], hspace=0.28, wspace=0.12)
     panels = [
-        ("ARCO ERA5 truth", truth.lon, truth.lat, truth_accum, rain_cmap, rain_norm, rain_levels, "rain"),
+        ("ERA5 GT", truth.lon, truth.lat, truth_accum, rain_cmap, rain_norm, rain_levels, "rain"),
         ("FuXi-S2S ensemble mean", fuxi.lon, fuxi.lat, fuxi_accum, rain_cmap, rain_norm, rain_levels, "rain"),
         ("ECMWF-S2S ensemble mean", ecmwf.lon, ecmwf.lat, ecmwf_accum, rain_cmap, rain_norm, rain_levels, "rain"),
         ("FuXi minus ECMWF", fuxi.lon, fuxi.lat, difference, diff_cmap, diff_norm, diff_levels, "diff"),
@@ -702,9 +702,9 @@ def plot_bias_spatial(
     fig = plt.figure(figsize=(12.6, 10.3), facecolor="white")
     gs = fig.add_gridspec(nrows=3, ncols=2, height_ratios=[1, 1, 0.08], hspace=0.28, wspace=0.12)
     panels = [
-        ("ARCO ERA5 truth", truth.lon, truth.lat, truth_accum, rain_cmap, rain_norm, rain_levels, "rain"),
-        ("FuXi minus ARCO", fuxi.lon, fuxi.lat, fuxi_bias, diff_cmap, diff_norm, diff_levels, "diff"),
-        ("ECMWF minus ARCO", fuxi.lon, fuxi.lat, ecmwf_bias, diff_cmap, diff_norm, diff_levels, "diff"),
+        ("ERA5 GT", truth.lon, truth.lat, truth_accum, rain_cmap, rain_norm, rain_levels, "rain"),
+        ("FuXi minus ERA5 GT", fuxi.lon, fuxi.lat, fuxi_bias, diff_cmap, diff_norm, diff_levels, "diff"),
+        ("ECMWF minus ERA5 GT", fuxi.lon, fuxi.lat, ecmwf_bias, diff_cmap, diff_norm, diff_levels, "diff"),
         ("FuXi minus ECMWF", fuxi.lon, fuxi.lat, model_diff, diff_cmap, diff_norm, diff_levels, "diff"),
     ]
 
@@ -744,7 +744,7 @@ def plot_bias_spatial(
     fig.text(
         0.055,
         0.93,
-        f"IC {ic_date} | valid {valid_dates[0]:%d %b %Y}-{valid_dates[-1]:%d %b %Y} | ARCO truth interpolated to the model grid for bias panels",
+        f"IC {ic_date} | valid {valid_dates[0]:%d %b %Y}-{valid_dates[-1]:%d %b %Y} | ERA5 GT interpolated to the model grid for bias panels",
         fontsize=11.2,
         color=COLORS["muted"],
     )
