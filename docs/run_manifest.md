@@ -678,11 +678,14 @@ Outputs:
 
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_rainfall_fuxi_ecmwf_arco.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_rainfall_paperstyle_fuxi_ecmwf_arco.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_india_imd_region_union_cumulative_rainfall.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_main_presentation_india_imd_region_union.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_imd_homogeneous_regions_cumulative_rainfall.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_main_presentation_imd_homogeneous_regions.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_4panel_fuxi_ecmwf_arco.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_bias_4panel_fuxi_ecmwf_arco.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_timeseries.csv`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_india_imd_region_union_cumulative_timeseries.csv`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_imd_homogeneous_regions_cumulative_timeseries.csv`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_fields.nc`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_verification_manifest.json`
@@ -691,6 +694,7 @@ Figure set:
 
 - cumulative all-India rainfall line plot for lead days `1-30`, now including the IMD 1991-2020 climatology reference
 - paper-style cumulative all-India rainfall plot matching the final-paper case-study layout, including endpoint labels, FuXi member 00, ECMWF control, and IMD climatology
+- paper-style all-India plot using the union of the four IMD homogeneous rainfall-region masks; this is the recommended all-India plot when paired with the homogeneous-region panels
 - four-panel cumulative rainfall plot for IMD homogeneous regions: Northwest India, Central India, South Peninsula, and East & Northeast India
 - four-panel spatial cumulative rainfall map: ERA5 GT, FuXi mean, ECMWF mean, FuXi minus ECMWF
 - four-panel spatial bias map: ERA5 GT, FuXi minus ERA5 GT, ECMWF minus ERA5 GT, FuXi minus ECMWF
@@ -703,6 +707,14 @@ Final all-India cumulative rainfall through lead day `30`:
 - ECMWF-S2S ensemble mean: `95.13 mm`
 - ECMWF control: `87.06 mm`
 - IMD 1991-2020 climatology: `96.33 mm`
+
+Final all-India cumulative rainfall using the IMD homogeneous-region union mask:
+
+- ERA5 GT: `68.13 mm`
+- FuXi-S2S ensemble mean: `34.13 mm`
+- FuXi member 00: `67.15 mm`
+- ECMWF-S2S ensemble mean: `98.80 mm`
+- IMD 1991-2020 climatology: `84.35 mm`
 
 Final IMD homogeneous-region cumulative rainfall through lead day `30`:
 
@@ -717,6 +729,7 @@ Notes:
 
 - line-plot means are area-weighted over India using the local India/state shapefile geometry
 - regional means use nearest-neighbor interpolation of the IMD homogeneous-region masks to each model/truth/climatology grid
+- the IMD-region-union all-India plot is area-weighted over the union of the four IMD homogeneous regions, not a simple average of the four regional means
 - IMD climatology is a 1991-2020 daily rainfall normal for the same valid month-days (`18 May-16 Jun`), not an observed truth line
 - spatial maps shade the full plotted domain by default and overlay India/state boundaries
 - ERA5 GT is interpolated to the model grid only for bias panels and cached fields

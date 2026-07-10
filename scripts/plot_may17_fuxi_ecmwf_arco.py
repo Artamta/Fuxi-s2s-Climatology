@@ -374,15 +374,12 @@ def load_region_masks(path: Path) -> xr.Dataset | None:
     return ds.sortby("lat").sortby("lon")
 
 
-def region_weights(mask_ds: xr.Dataset, region_var: str, lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
-    if region_var not in mask_ds:
-        raise ValueError(f"missing IMD region mask variable: {region_var}")
+def mask_weights(mask_da: xr.DataArray, lat: np.ndarray, lon: np.ndarray, label: str) -> np.ndarray:
     lat = np.asarray(lat, dtype=np.float32)
     lon = np.asarray(lon, dtype=np.float32)
     target_lat_sorted = np.sort(lat)
     mask = (
-        mask_ds[region_var]
-        .astype("float32")
+        mask_da.astype("float32")
         .interp(lat=target_lat_sorted, lon=lon, method="nearest", kwargs={"fill_value": "extrapolate"})
         .sel(lat=lat)
         .values
@@ -391,8 +388,26 @@ def region_weights(mask_ds: xr.Dataset, region_var: str, lat: np.ndarray, lon: n
     weights = np.broadcast_to(np.cos(np.deg2rad(lat))[:, np.newaxis], mask.shape).astype("float64").copy()
     weights[~mask] = 0.0
     if not np.any(weights > 0):
-        raise RuntimeError(f"IMD region mask {region_var} has no grid cells on target grid")
+        raise RuntimeError(f"{label} has no grid cells on target grid")
     return weights
+
+
+def region_weights(mask_ds: xr.Dataset, region_var: str, lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
+    if region_var not in mask_ds:
+        raise ValueError(f"missing IMD region mask variable: {region_var}")
+    return mask_weights(mask_ds[region_var], lat, lon, f"IMD region mask {region_var}")
+
+
+def region_union_weights(mask_ds: xr.Dataset, lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
+    union = None
+    for region_var in REGION_VARS.values():
+        if region_var not in mask_ds:
+            raise ValueError(f"missing IMD region mask variable: {region_var}")
+        region = mask_ds[region_var] >= 0.5
+        union = region if union is None else (union | region)
+    if union is None:
+        raise RuntimeError("no IMD homogeneous region masks found")
+    return mask_weights(union.astype("float32"), lat, lon, "IMD homogeneous region union")
 
 
 def weighted_member_daily(fields: np.ndarray, weights: np.ndarray) -> np.ndarray:
@@ -458,6 +473,57 @@ def build_regional_timeseries(
                     row["imd_1991_2020_climatology_cumulative_mm"] = imd_cum[lead_idx]
                 rows.append(row)
         return pd.DataFrame(rows)
+    finally:
+        mask_ds.close()
+
+
+def build_region_union_timeseries(
+    ic_date: str,
+    lead_days: int,
+    fuxi: ModelProduct,
+    ecmwf: ModelProduct,
+    truth: TruthProduct,
+    imd_climatology_path: Path,
+    region_masks_path: Path,
+) -> pd.DataFrame | None:
+    if fuxi.daily_member_field is None or ecmwf.daily_member_field is None or truth.daily_field is None:
+        raise RuntimeError("region-union plotting requires daily gridded fields")
+    mask_ds = load_region_masks(region_masks_path)
+    if mask_ds is None:
+        return None
+    valid_dates = date_range_for(ic_date, lead_days)
+    imd_grid = read_imd_climatology_grid(imd_climatology_path, valid_dates)
+    try:
+        fuxi_daily = weighted_member_daily(fuxi.daily_member_field, region_union_weights(mask_ds, fuxi.lat, fuxi.lon))
+        ecmwf_daily = weighted_member_daily(ecmwf.daily_member_field, region_union_weights(mask_ds, ecmwf.lat, ecmwf.lon))
+        truth_daily = weighted_field_daily(truth.daily_field, region_union_weights(mask_ds, truth.lat, truth.lon))
+        imd_daily = None
+        if imd_grid is not None:
+            imd_lat, imd_lon, imd_fields = imd_grid
+            imd_daily = weighted_field_daily(imd_fields, region_union_weights(mask_ds, imd_lat, imd_lon))
+
+        fuxi_cum = np.cumsum(fuxi_daily, axis=1)
+        ecmwf_cum = np.cumsum(ecmwf_daily, axis=1)
+        truth_cum = np.cumsum(truth_daily)
+        data = {
+            "lead_day": np.arange(1, lead_days + 1, dtype=np.int32),
+            "valid_date": valid_dates.strftime("%Y-%m-%d"),
+            "arco_daily_mm": truth_daily,
+            "arco_cumulative_mm": truth_cum,
+            "fuxi_daily_ens_mean_mm": fuxi_daily.mean(axis=0),
+            "fuxi_cumulative_p10_mm": np.percentile(fuxi_cum, 10, axis=0),
+            "fuxi_cumulative_ens_mean_mm": fuxi_cum.mean(axis=0),
+            "fuxi_cumulative_p90_mm": np.percentile(fuxi_cum, 90, axis=0),
+            "fuxi_member00_cumulative_mm": fuxi_cum[0],
+            "ecmwf_daily_ens_mean_mm": ecmwf_daily.mean(axis=0),
+            "ecmwf_cumulative_p10_mm": np.percentile(ecmwf_cum, 10, axis=0),
+            "ecmwf_cumulative_ens_mean_mm": ecmwf_cum.mean(axis=0),
+            "ecmwf_cumulative_p90_mm": np.percentile(ecmwf_cum, 90, axis=0),
+        }
+        if imd_daily is not None:
+            data["imd_1991_2020_climatology_daily_mm"] = imd_daily
+            data["imd_1991_2020_climatology_cumulative_mm"] = np.cumsum(imd_daily)
+        return pd.DataFrame(data)
     finally:
         mask_ds.close()
 
@@ -590,7 +656,13 @@ def endpoint_offsets(values: dict[str, float], min_separation: float = 7.0) -> d
     return adjusted
 
 
-def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) -> Path:
+def plot_cumulative_paper_style(
+    df: pd.DataFrame,
+    ic_date: str,
+    output: Path,
+    area_label: str = "India",
+    footnote_extra: str = "",
+) -> Path:
     fig, ax = plt.subplots(figsize=(15.2, 7.6), facecolor="white")
     x = df["lead_day"].to_numpy()
 
@@ -659,7 +731,7 @@ def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) ->
         annotate_endpoint(ax, final_x, final_values["IMD"], f"IMD clim {final_values['IMD']:.0f} mm", COLORS["imd_clim"], offset=offsets["IMD"])
 
     valid_dates = pd.to_datetime(df["valid_date"])
-    fig.text(0.055, 0.965, f"{int(x[-1])}-Day Cumulative Rainfall Forecast over India", fontsize=22, fontweight="bold", color=COLORS["text"])
+    fig.text(0.055, 0.965, f"{int(x[-1])}-Day Cumulative Rainfall Forecast over {area_label}", fontsize=22, fontweight="bold", color=COLORS["text"])
     fig.text(
         0.055,
         0.925,
@@ -672,7 +744,8 @@ def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) ->
     fig.text(
         0.055,
         0.035,
-        "ERA5 GT is available as complete daily totals through lead day 30; IMD line is 1991-2020 daily rainfall climatology; shaded bands show member p10-p90.",
+        "ERA5 GT is available as complete daily totals through lead day 30; IMD line is 1991-2020 daily rainfall climatology; shaded bands show member p10-p90."
+        + (f" {footnote_extra}" if footnote_extra else ""),
         fontsize=8.8,
         color=COLORS["muted"],
     )
@@ -1080,12 +1153,23 @@ def main() -> int:
         args.imd_climatology,
         args.imd_region_masks,
     )
+    region_union_df = build_region_union_timeseries(
+        args.ic_date,
+        args.lead_days,
+        fuxi,
+        ecmwf,
+        truth,
+        args.imd_climatology,
+        args.imd_region_masks,
+    )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     csv_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_cumulative_timeseries.csv"
     regional_csv_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_imd_homogeneous_regions_cumulative_timeseries.csv"
+    region_union_csv_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_india_imd_region_union_cumulative_timeseries.csv"
     fields_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_spatial_fields.nc"
     line_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_cumulative_rainfall_fuxi_ecmwf_arco.png"
     paper_line_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_cumulative_rainfall_paperstyle_fuxi_ecmwf_arco.png"
+    region_union_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_india_imd_region_union_cumulative_rainfall.png"
     regional_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_imd_homogeneous_regions_cumulative_rainfall.png"
     spatial_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_spatial_4panel_fuxi_ecmwf_arco.png"
     bias_spatial_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_spatial_bias_4panel_fuxi_ecmwf_arco.png"
@@ -1094,9 +1178,19 @@ def main() -> int:
     df.to_csv(csv_out, index=False)
     if regional_df is not None:
         regional_df.to_csv(regional_csv_out, index=False)
+    if region_union_df is not None:
+        region_union_df.to_csv(region_union_csv_out, index=False)
     write_spatial_cache(fields_out, args.ic_date, args.lead_days, fuxi, ecmwf, truth)
     plot_cumulative(df, args.ic_date, line_out)
     plot_cumulative_paper_style(df, args.ic_date, paper_line_out)
+    if region_union_df is not None:
+        plot_cumulative_paper_style(
+            region_union_df,
+            args.ic_date,
+            region_union_out,
+            area_label="India (IMD Region-Mask Union)",
+            footnote_extra="Area mean uses the union of the four IMD homogeneous rainfall-region masks.",
+        )
     if regional_df is not None:
         plot_regional_cumulative(regional_df, args.ic_date, args.lead_days, regional_out)
     plot_spatial(
@@ -1142,9 +1236,11 @@ def main() -> int:
         "members": len(members),
         "timeseries_csv": str(csv_out),
         "regional_timeseries_csv": str(regional_csv_out) if regional_df is not None else None,
+        "india_imd_region_union_timeseries_csv": str(region_union_csv_out) if region_union_df is not None else None,
         "spatial_fields": str(fields_out),
         "cumulative_plot": str(line_out),
         "cumulative_paperstyle_plot": str(paper_line_out),
+        "india_imd_region_union_plot": str(region_union_out) if region_union_df is not None else None,
         "regional_cumulative_plot": str(regional_out) if regional_df is not None else None,
         "spatial_plot": str(spatial_out),
         "spatial_bias_plot": str(bias_spatial_out),
@@ -1159,6 +1255,20 @@ def main() -> int:
             ),
         },
         "regional_final_cumulative_mm": regional_final_totals(regional_df),
+        "india_imd_region_union_final_cumulative_mm": (
+            {
+                "era5_gt": float(region_union_df["arco_cumulative_mm"].iloc[-1]),
+                "fuxi_ens_mean": float(region_union_df["fuxi_cumulative_ens_mean_mm"].iloc[-1]),
+                "ecmwf_ens_mean": float(region_union_df["ecmwf_cumulative_ens_mean_mm"].iloc[-1]),
+                "imd_1991_2020_climatology": (
+                    float(region_union_df["imd_1991_2020_climatology_cumulative_mm"].iloc[-1])
+                    if "imd_1991_2020_climatology_cumulative_mm" in region_union_df.columns
+                    else None
+                ),
+            }
+            if region_union_df is not None
+            else {}
+        ),
         "created_utc": datetime.now(timezone.utc).isoformat(),
     }
     write_manifest(manifest_out, summary)
@@ -1166,9 +1276,13 @@ def main() -> int:
     print(f"wrote csv     : {csv_out}")
     if regional_df is not None:
         print(f"wrote regions : {regional_csv_out}")
+    if region_union_df is not None:
+        print(f"wrote union   : {region_union_csv_out}")
     print(f"wrote fields  : {fields_out}")
     print(f"wrote line    : {line_out}")
     print(f"wrote paper   : {paper_line_out}")
+    if region_union_df is not None:
+        print(f"wrote IMDIndia: {region_union_out}")
     if regional_df is not None:
         print(f"wrote regional: {regional_out}")
     print(f"wrote spatial : {spatial_out}")
