@@ -680,6 +680,8 @@ Outputs:
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_cumulative_rainfall_paperstyle_fuxi_ecmwf_arco.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_india_imd_region_union_cumulative_rainfall.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_main_presentation_india_imd_region_union.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_all_india_plus_imd_homogeneous_regions_cumulative_rainfall.png`
+- `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_main_presentation_all_india_plus_imd_regions.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_imd_homogeneous_regions_cumulative_rainfall.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_main_presentation_imd_homogeneous_regions.png`
 - `outputs/may17_fuxi_ecmwf_arco/20260517_lead1_30_spatial_4panel_fuxi_ecmwf_arco.png`
@@ -695,6 +697,7 @@ Figure set:
 - cumulative all-India rainfall line plot for lead days `1-30`, now including the IMD 1991-2020 climatology reference
 - paper-style cumulative all-India rainfall plot matching the final-paper case-study layout, including endpoint labels, FuXi member 00, ECMWF control, and IMD climatology
 - paper-style all-India plot using the union of the four IMD homogeneous rainfall-region masks; this is the recommended all-India plot when paired with the homogeneous-region panels
+- combined presentation plot with one All-India IMD-region-union panel plus the four IMD homogeneous-region panels
 - four-panel cumulative rainfall plot for IMD homogeneous regions: Northwest India, Central India, South Peninsula, and East & Northeast India
 - four-panel spatial cumulative rainfall map: ERA5 GT, FuXi mean, ECMWF mean, FuXi minus ECMWF
 - four-panel spatial bias map: ERA5 GT, FuXi minus ERA5 GT, ECMWF minus ERA5 GT, FuXi minus ECMWF

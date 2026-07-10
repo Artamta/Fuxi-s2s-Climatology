@@ -851,6 +851,131 @@ def plot_regional_cumulative(df: pd.DataFrame, ic_date: str, lead_days: int, out
     return output
 
 
+def panel_truth_column(df: pd.DataFrame) -> str:
+    if "arco_cumulative_mm" in df.columns:
+        return "arco_cumulative_mm"
+    if "era5_gt_cumulative_mm" in df.columns:
+        return "era5_gt_cumulative_mm"
+    raise ValueError("missing ERA5 GT cumulative column")
+
+
+def add_cumulative_panel(ax: plt.Axes, df: pd.DataFrame, title: str, show_ylabel: bool = True) -> None:
+    x = df["lead_day"].to_numpy()
+    truth_col = panel_truth_column(df)
+
+    ax.fill_between(x, df["fuxi_cumulative_p10_mm"], df["fuxi_cumulative_p90_mm"], color=COLORS["fuxi"], alpha=0.12, linewidth=0, label="FuXi p10-p90")
+    ax.fill_between(x, df["ecmwf_cumulative_p10_mm"], df["ecmwf_cumulative_p90_mm"], color=COLORS["ecmwf"], alpha=0.13, linewidth=0, label="ECMWF p10-p90")
+    ax.plot(x, df[truth_col], color=COLORS["arco"], lw=2.7, label="ERA5 GT")
+    if "imd_1991_2020_climatology_cumulative_mm" in df.columns:
+        ax.plot(
+            x,
+            df["imd_1991_2020_climatology_cumulative_mm"],
+            color=COLORS["imd_clim"],
+            lw=2.5,
+            ls=(0, (5, 3)),
+            label="IMD 1991-2020 climatology",
+        )
+    ax.plot(x, df["fuxi_cumulative_ens_mean_mm"], color=COLORS["fuxi"], lw=2.7, label="FuXi-S2S ensemble mean")
+    ax.plot(x, df["ecmwf_cumulative_ens_mean_mm"], color=COLORS["ecmwf"], lw=2.7, label="ECMWF-S2S ensemble mean")
+
+    tick_days = [1, 7, 14, 21, 28, int(x[-1])]
+    tick_days = list(dict.fromkeys(tick_days))
+    valid_lookup = {int(row.lead_day): pd.Timestamp(row.valid_date) for row in df.itertuples()}
+    ax.set_xticks(tick_days, [f"L{lead}\n{valid_lookup[lead].strftime('%b %-d')}" for lead in tick_days])
+    ax.set_xlim(0.2, float(x[-1]) + 0.8)
+    ax.set_ylim(
+        0,
+        cumulative_ymax(
+            df,
+            [
+                "fuxi_cumulative_p90_mm",
+                "ecmwf_cumulative_p90_mm",
+                truth_col,
+                "imd_1991_2020_climatology_cumulative_mm",
+            ],
+        )
+        * 1.16,
+    )
+    ax.set_title(title, loc="left", color=COLORS["text"], fontsize=13, pad=8)
+    ax.set_xlabel("Lead day and valid date")
+    ax.set_ylabel("Cumulative rainfall (mm)" if show_ylabel else "")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+    final = df.iloc[-1]
+    totals = (
+        f"ERA5 GT {final[truth_col]:.0f} | "
+        f"IMD clim {final.get('imd_1991_2020_climatology_cumulative_mm', np.nan):.0f} | "
+        f"FuXi {final['fuxi_cumulative_ens_mean_mm']:.0f} | "
+        f"ECMWF {final['ecmwf_cumulative_ens_mean_mm']:.0f} mm"
+    )
+    ax.text(
+        0.012,
+        0.972,
+        totals,
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        fontsize=9.0,
+        color=COLORS["text"],
+        bbox=dict(boxstyle="round,pad=0.24", facecolor="white", edgecolor="#d9dee5", alpha=0.95),
+    )
+
+
+def plot_india_and_regions_cumulative(
+    india_df: pd.DataFrame,
+    regional_df: pd.DataFrame,
+    ic_date: str,
+    lead_days: int,
+    output: Path,
+) -> Path:
+    fig = plt.figure(figsize=(16.0, 13.2), facecolor="white")
+    gs = fig.add_gridspec(nrows=3, ncols=2, height_ratios=[1.05, 1.0, 1.0], hspace=0.36, wspace=0.14)
+
+    axes = [
+        fig.add_subplot(gs[0, :]),
+        fig.add_subplot(gs[1, 0]),
+        fig.add_subplot(gs[1, 1]),
+        fig.add_subplot(gs[2, 0]),
+        fig.add_subplot(gs[2, 1]),
+    ]
+    add_cumulative_panel(axes[0], india_df, "All India (IMD homogeneous-region union)", show_ylabel=True)
+    for idx, (ax, region) in enumerate(zip(axes[1:], REGION_VARS)):
+        add_cumulative_panel(ax, regional_df[regional_df["region"] == region].copy(), region, show_ylabel=(idx % 2 == 0))
+
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="upper center",
+        bbox_to_anchor=(0.52, 0.918),
+        ncol=3,
+        frameon=True,
+        facecolor="white",
+        edgecolor="#d9dee5",
+        framealpha=0.95,
+        borderpad=0.55,
+        columnspacing=1.2,
+        fontsize=9.0,
+    )
+    valid_dates = pd.to_datetime(india_df["valid_date"])
+    fig.text(0.045, 0.982, f"All India and IMD Homogeneous Regions: {lead_days}-Day Cumulative Rainfall", fontsize=21, fontweight="bold", color=COLORS["text"])
+    fig.text(
+        0.045,
+        0.952,
+        f"Initialized {pd.Timestamp(datetime.strptime(ic_date, '%Y%m%d')).strftime('%-d %b %Y')} | "
+        f"valid {valid_dates.iloc[0].strftime('%-d %b')}-{valid_dates.iloc[-1].strftime('%-d %b')} | "
+        "All India is the area-weighted union of the four IMD homogeneous rainfall regions",
+        fontsize=11.4,
+        color=COLORS["muted"],
+    )
+    fig.subplots_adjust(left=0.07, right=0.985, bottom=0.06, top=0.865)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output)
+    plt.close(fig)
+    return output
+
+
 def regional_final_totals(df: pd.DataFrame | None) -> dict:
     if df is None:
         return {}
@@ -1171,6 +1296,7 @@ def main() -> int:
     paper_line_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_cumulative_rainfall_paperstyle_fuxi_ecmwf_arco.png"
     region_union_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_india_imd_region_union_cumulative_rainfall.png"
     regional_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_imd_homogeneous_regions_cumulative_rainfall.png"
+    combined_regions_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_all_india_plus_imd_homogeneous_regions_cumulative_rainfall.png"
     spatial_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_spatial_4panel_fuxi_ecmwf_arco.png"
     bias_spatial_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_spatial_bias_4panel_fuxi_ecmwf_arco.png"
     manifest_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_verification_manifest.json"
@@ -1193,6 +1319,8 @@ def main() -> int:
         )
     if regional_df is not None:
         plot_regional_cumulative(regional_df, args.ic_date, args.lead_days, regional_out)
+    if region_union_df is not None and regional_df is not None:
+        plot_india_and_regions_cumulative(region_union_df, regional_df, args.ic_date, args.lead_days, combined_regions_out)
     plot_spatial(
         ic_date=args.ic_date,
         lead_days=args.lead_days,
@@ -1242,6 +1370,7 @@ def main() -> int:
         "cumulative_paperstyle_plot": str(paper_line_out),
         "india_imd_region_union_plot": str(region_union_out) if region_union_df is not None else None,
         "regional_cumulative_plot": str(regional_out) if regional_df is not None else None,
+        "all_india_plus_regions_plot": str(combined_regions_out) if region_union_df is not None and regional_df is not None else None,
         "spatial_plot": str(spatial_out),
         "spatial_bias_plot": str(bias_spatial_out),
         "final_cumulative_mm": {
@@ -1285,6 +1414,8 @@ def main() -> int:
         print(f"wrote IMDIndia: {region_union_out}")
     if regional_df is not None:
         print(f"wrote regional: {regional_out}")
+    if region_union_df is not None and regional_df is not None:
+        print(f"wrote combined: {combined_regions_out}")
     print(f"wrote spatial : {spatial_out}")
     print(f"wrote bias map: {bias_spatial_out}")
     print(f"wrote manifest: {manifest_out}")
