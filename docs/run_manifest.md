@@ -660,6 +660,7 @@ Command:
 python scripts/plot_may17_fuxi_ecmwf_arco.py \
   --ic-date 20260517 \
   --lead-days 30 \
+  --imd-climatology /storage/raj.ayush/All_Model_Data/ground_truth/imd_rainfall/climatology/imd_rain_1991_2020_daily_climatology.nc \
   --output-dir outputs/may17_fuxi_ecmwf_arco
 ```
 
@@ -669,6 +670,7 @@ Inputs:
 - FuXi members: `00-49`
 - ECMWF processed forecast: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/ecmwf/processed/ecmwf_20260517_tp_ens50_lead42_india_1p5deg_daily_mm.nc`
 - ARCO ERA5 truth: `/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/arco_era5_tp_daily_20260517.nc`
+- IMD rainfall climatology: `/storage/raj.ayush/All_Model_Data/ground_truth/imd_rainfall/climatology/imd_rain_1991_2020_daily_climatology.nc`
 
 Outputs:
 
@@ -682,8 +684,8 @@ Outputs:
 
 Figure set:
 
-- cumulative all-India rainfall line plot for lead days `1-30`
-- paper-style cumulative all-India rainfall plot matching the final-paper case-study layout, including endpoint labels, FuXi member 00, and ECMWF control
+- cumulative all-India rainfall line plot for lead days `1-30`, now including the IMD 1991-2020 climatology reference
+- paper-style cumulative all-India rainfall plot matching the final-paper case-study layout, including endpoint labels, FuXi member 00, ECMWF control, and IMD climatology
 - four-panel spatial cumulative rainfall map: ARCO truth, FuXi mean, ECMWF mean, FuXi minus ECMWF
 - four-panel spatial bias map: ARCO truth, FuXi minus ARCO, ECMWF minus ARCO, FuXi minus ECMWF
 
@@ -694,9 +696,11 @@ Final all-India cumulative rainfall through lead day `30`:
 - FuXi member 00: `64.30 mm`
 - ECMWF-S2S ensemble mean: `95.13 mm`
 - ECMWF control: `87.06 mm`
+- IMD 1991-2020 climatology: `96.33 mm`
 
 Notes:
 
 - line-plot means are area-weighted over India using the local India/state shapefile geometry
+- IMD climatology is a 1991-2020 daily rainfall normal for the same valid month-days (`18 May-16 Jun`), not an observed truth line
 - spatial maps shade the full plotted domain by default and overlay India/state boundaries
 - ARCO truth is interpolated to the model grid only for bias panels and cached fields

@@ -41,6 +41,10 @@ DEFAULT_ARCO_FILE = Path(
     "/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/may17/truth/"
     "arco_era5_tp_daily_20260517.nc"
 )
+DEFAULT_IMD_CLIMATOLOGY = Path(
+    "/storage/raj.ayush/All_Model_Data/ground_truth/imd_rainfall/climatology/"
+    "imd_rain_1991_2020_daily_climatology.nc"
+)
 DEFAULT_OUTPUT_DIR = Path("outputs/may17_fuxi_ecmwf_arco")
 
 COLORS = {
@@ -48,7 +52,8 @@ COLORS = {
     "fuxi_dark": "#006d3c",
     "ecmwf": "#ff8c1a",
     "ecmwf_dark": "#b85200",
-    "arco": "#1559a6",
+    "arco": "#111827",
+    "imd_clim": "#1559a6",
     "text": "#1f2933",
     "muted": "#5b6472",
     "grid": "#dce3ea",
@@ -102,6 +107,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--ecmwf-file", type=Path, default=DEFAULT_ECMWF_FILE)
     parser.add_argument("--ecmwf-cf-file", type=Path, default=DEFAULT_ECMWF_CF_FILE)
     parser.add_argument("--arco-file", type=Path, default=DEFAULT_ARCO_FILE)
+    parser.add_argument("--imd-climatology", type=Path, default=DEFAULT_IMD_CLIMATOLOGY)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--dpi", type=int, default=220)
     parser.add_argument("--map-scale", default="50m", choices=("10m", "50m", "110m"))
@@ -289,6 +295,39 @@ def date_range_for(ic_date: str, lead_days: int) -> pd.DatetimeIndex:
     return pd.date_range(init + timedelta(days=1), periods=lead_days, freq="D")
 
 
+def month_day_key(date: pd.Timestamp) -> str:
+    return f"{date.month:02d}-{date.day:02d}"
+
+
+def read_imd_climatology(path: Path, valid_dates: pd.DatetimeIndex, india_geoms: list) -> np.ndarray | None:
+    if not path.exists():
+        return None
+    ds = xr.open_dataset(path)
+    try:
+        if "rain_mean" not in ds:
+            raise ValueError(f"{path}: missing rain_mean")
+        if "month_day" not in ds:
+            raise ValueError(f"{path}: missing month_day coordinate")
+        lat = ds.lat.values.astype("float32")
+        lon = ds.lon.values.astype("float32")
+        _, weights = mask_and_weights(lat, lon, india_geoms)
+        month_days = [str(item) for item in ds["month_day"].values.astype(str)]
+        lookup = {item: idx for idx, item in enumerate(month_days)}
+        daily = []
+        for date in valid_dates:
+            key = month_day_key(pd.Timestamp(date))
+            if key == "02-29":
+                daily.append(np.nan)
+                continue
+            if key not in lookup:
+                raise ValueError(f"{path}: missing climatology day {key}")
+            field = ds["rain_mean"].isel(day=lookup[key]).values.astype("float32")
+            daily.append(weighted_mean(field, weights))
+        return np.asarray(daily, dtype=np.float32)
+    finally:
+        ds.close()
+
+
 def build_timeseries(
     ic_date: str,
     lead_days: int,
@@ -296,6 +335,7 @@ def build_timeseries(
     ecmwf: ModelProduct,
     truth: TruthProduct,
     ecmwf_control_cumulative: np.ndarray | None,
+    imd_climatology_daily: np.ndarray | None,
 ) -> pd.DataFrame:
     valid_dates = date_range_for(ic_date, lead_days)
     fuxi_cum = fuxi.cumulative_member
@@ -317,7 +357,17 @@ def build_timeseries(
     }
     if ecmwf_control_cumulative is not None:
         data["ecmwf_control_cumulative_mm"] = ecmwf_control_cumulative
+    if imd_climatology_daily is not None:
+        data["imd_1991_2020_climatology_daily_mm"] = imd_climatology_daily
+        data["imd_1991_2020_climatology_cumulative_mm"] = np.cumsum(imd_climatology_daily)
     return pd.DataFrame(data)
+
+
+def cumulative_ymax(df: pd.DataFrame, columns: list[str]) -> float:
+    values = [float(df[column].max(skipna=True)) for column in columns if column in df.columns]
+    if not values:
+        return 1.0
+    return max(values)
 
 
 def plot_cumulative(df: pd.DataFrame, ic_date: str, output: Path) -> Path:
@@ -329,15 +379,28 @@ def plot_cumulative(df: pd.DataFrame, ic_date: str, output: Path) -> Path:
     ax.fill_between(x, df["ecmwf_cumulative_p10_mm"], df["ecmwf_cumulative_p90_mm"], color=COLORS["ecmwf"], alpha=0.16, linewidth=0)
     ax.plot(x, df["ecmwf_cumulative_ens_mean_mm"], color=COLORS["ecmwf"], lw=3.0, label="ECMWF-S2S ensemble mean")
     ax.plot(x, df["arco_cumulative_mm"], color=COLORS["arco"], lw=3.2, label="ARCO ERA5 truth")
+    if "imd_1991_2020_climatology_cumulative_mm" in df.columns:
+        ax.plot(
+            x,
+            df["imd_1991_2020_climatology_cumulative_mm"],
+            color=COLORS["imd_clim"],
+            lw=2.8,
+            ls=(0, (5, 3)),
+            label="IMD 1991-2020 climatology",
+        )
 
     tick_days = [1, 7, 14, 21, 28, int(x[-1])]
     tick_days = list(dict.fromkeys(tick_days))
     valid_lookup = {int(row.lead_day): pd.Timestamp(row.valid_date) for row in df.itertuples()}
     ax.set_xticks(tick_days, [f"L{lead}\n{valid_lookup[lead].strftime('%b %-d')}" for lead in tick_days])
-    ymax = max(
-        float(df["fuxi_cumulative_p90_mm"].max()),
-        float(df["ecmwf_cumulative_p90_mm"].max()),
-        float(df["arco_cumulative_mm"].max()),
+    ymax = cumulative_ymax(
+        df,
+        [
+            "fuxi_cumulative_p90_mm",
+            "ecmwf_cumulative_p90_mm",
+            "arco_cumulative_mm",
+            "imd_1991_2020_climatology_cumulative_mm",
+        ],
     )
     ax.set_ylim(0, ymax * 1.13)
     ax.set_xlim(0.2, float(x[-1]) + 0.8)
@@ -351,7 +414,7 @@ def plot_cumulative(df: pd.DataFrame, ic_date: str, output: Path) -> Path:
     fig.text(
         0.055,
         0.925,
-        f"IC {ic_date} | lead days 1-{int(x[-1])} | ARCO ERA5 complete truth window | area-weighted India mean",
+        f"IC {ic_date} | lead days 1-{int(x[-1])} | ARCO ERA5 complete truth window | IMD climatology reference | area-weighted India mean",
         fontsize=11.4,
         color=COLORS["muted"],
     )
@@ -383,6 +446,16 @@ def annotate_endpoint(ax: plt.Axes, x: float, y: float, label: str, color: str, 
     )
 
 
+def endpoint_offsets(values: dict[str, float], min_separation: float = 7.0) -> dict[str, float]:
+    adjusted = {}
+    previous = None
+    for name, value in sorted(values.items(), key=lambda item: item[1]):
+        text_y = value if previous is None else max(value, previous + min_separation)
+        adjusted[name] = text_y - value
+        previous = text_y
+    return adjusted
+
+
 def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) -> Path:
     fig, ax = plt.subplots(figsize=(15.2, 7.6), facecolor="white")
     x = df["lead_day"].to_numpy()
@@ -395,16 +468,29 @@ def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) ->
     ax.plot(x, df["ecmwf_cumulative_ens_mean_mm"], color=COLORS["ecmwf"], lw=3.0, label="ECMWF-S2S ensemble mean")
     if "ecmwf_control_cumulative_mm" in df.columns:
         ax.plot(x, df["ecmwf_control_cumulative_mm"], color=COLORS["ecmwf_dark"], lw=2.4, ls=(0, (7, 5)), label="ECMWF control")
+    if "imd_1991_2020_climatology_cumulative_mm" in df.columns:
+        ax.plot(
+            x,
+            df["imd_1991_2020_climatology_cumulative_mm"],
+            color=COLORS["imd_clim"],
+            lw=2.8,
+            ls=(0, (5, 3)),
+            label="IMD 1991-2020 climatology",
+        )
 
     tick_days = [1, 7, 14, 21, 28, int(x[-1])]
     tick_days = list(dict.fromkeys(tick_days))
     valid_lookup = {int(row.lead_day): pd.Timestamp(row.valid_date) for row in df.itertuples()}
     ax.set_xticks(tick_days, [f"L{lead}\n{valid_lookup[lead].strftime('%b %-d')}" for lead in tick_days])
-    ymax = max(
-        float(df["fuxi_cumulative_p90_mm"].max()),
-        float(df["ecmwf_cumulative_p90_mm"].max()),
-        float(df["arco_cumulative_mm"].max()),
-        float(df["ecmwf_control_cumulative_mm"].max()) if "ecmwf_control_cumulative_mm" in df.columns else 0.0,
+    ymax = cumulative_ymax(
+        df,
+        [
+            "fuxi_cumulative_p90_mm",
+            "ecmwf_cumulative_p90_mm",
+            "arco_cumulative_mm",
+            "ecmwf_control_cumulative_mm",
+            "imd_1991_2020_climatology_cumulative_mm",
+        ],
     )
     ax.set_ylim(0, ymax * 1.22)
     ax.set_xlim(0.2, float(x[-1]) + 2.4)
@@ -429,9 +515,14 @@ def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) ->
         "ARCO": float(df["arco_cumulative_mm"].iloc[-1]),
         "FuXi": float(df["fuxi_cumulative_ens_mean_mm"].iloc[-1]),
     }
-    annotate_endpoint(ax, final_x, final_values["ECMWF"], f"ECMWF {final_values['ECMWF']:.0f} mm", COLORS["ecmwf"], offset=6.0)
-    annotate_endpoint(ax, final_x, final_values["ARCO"], f"ARCO {final_values['ARCO']:.0f} mm", COLORS["arco"], offset=0.0)
-    annotate_endpoint(ax, final_x, final_values["FuXi"], f"FuXi {final_values['FuXi']:.0f} mm", COLORS["fuxi"], offset=-5.0)
+    if "imd_1991_2020_climatology_cumulative_mm" in df.columns:
+        final_values["IMD"] = float(df["imd_1991_2020_climatology_cumulative_mm"].iloc[-1])
+    offsets = endpoint_offsets(final_values)
+    annotate_endpoint(ax, final_x, final_values["ECMWF"], f"ECMWF {final_values['ECMWF']:.0f} mm", COLORS["ecmwf"], offset=offsets["ECMWF"])
+    annotate_endpoint(ax, final_x, final_values["ARCO"], f"ARCO {final_values['ARCO']:.0f} mm", COLORS["arco"], offset=offsets["ARCO"])
+    annotate_endpoint(ax, final_x, final_values["FuXi"], f"FuXi {final_values['FuXi']:.0f} mm", COLORS["fuxi"], offset=offsets["FuXi"])
+    if "IMD" in final_values:
+        annotate_endpoint(ax, final_x, final_values["IMD"], f"IMD clim {final_values['IMD']:.0f} mm", COLORS["imd_clim"], offset=offsets["IMD"])
 
     valid_dates = pd.to_datetime(df["valid_date"])
     fig.text(0.055, 0.965, f"{int(x[-1])}-Day Cumulative Rainfall Forecast over India", fontsize=22, fontweight="bold", color=COLORS["text"])
@@ -440,14 +531,14 @@ def plot_cumulative_paper_style(df: pd.DataFrame, ic_date: str, output: Path) ->
         0.925,
         f"Initialized {pd.Timestamp(datetime.strptime(ic_date, '%Y%m%d')).strftime('%-d %b %Y')} | "
         f"valid {valid_dates.iloc[0].strftime('%-d %b')}-{valid_dates.iloc[-1].strftime('%-d %b')} | "
-        "FuXi-S2S and ECMWF-S2S versus ARCO ERA5 truth",
+        "FuXi-S2S and ECMWF-S2S versus ARCO ERA5 truth and IMD climatology",
         fontsize=12,
         color=COLORS["muted"],
     )
     fig.text(
         0.055,
         0.035,
-        "ARCO ERA5 truth is available as complete daily totals through lead day 30; shaded bands show member p10-p90.",
+        "ARCO ERA5 truth is available as complete daily totals through lead day 30; IMD line is 1991-2020 daily rainfall climatology; shaded bands show member p10-p90.",
         fontsize=8.8,
         color=COLORS["muted"],
     )
@@ -727,8 +818,14 @@ def main() -> int:
     ecmwf_control_cumulative = read_ecmwf_control_cumulative(args.ecmwf_cf_file, args.lead_days, bbox, india_outline_geoms)
     print("loading ARCO...")
     truth = read_arco(args.arco_file, args.lead_days, bbox, india_outline_geoms)
+    print("loading IMD climatology...")
+    imd_climatology_daily = read_imd_climatology(
+        args.imd_climatology,
+        date_range_for(args.ic_date, args.lead_days),
+        india_outline_geoms,
+    )
 
-    df = build_timeseries(args.ic_date, args.lead_days, fuxi, ecmwf, truth, ecmwf_control_cumulative)
+    df = build_timeseries(args.ic_date, args.lead_days, fuxi, ecmwf, truth, ecmwf_control_cumulative, imd_climatology_daily)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     csv_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_cumulative_timeseries.csv"
     fields_out = args.output_dir / f"{args.ic_date}_lead1_{args.lead_days}_spatial_fields.nc"
@@ -780,6 +877,7 @@ def main() -> int:
         "ecmwf_file": str(args.ecmwf_file),
         "ecmwf_cf_file": str(args.ecmwf_cf_file),
         "arco_file": str(args.arco_file),
+        "imd_climatology_file": str(args.imd_climatology) if args.imd_climatology.exists() else "missing",
         "members": len(members),
         "timeseries_csv": str(csv_out),
         "spatial_fields": str(fields_out),
@@ -791,6 +889,11 @@ def main() -> int:
             "arco_era5": float(df["arco_cumulative_mm"].iloc[-1]),
             "fuxi_ens_mean": float(df["fuxi_cumulative_ens_mean_mm"].iloc[-1]),
             "ecmwf_ens_mean": float(df["ecmwf_cumulative_ens_mean_mm"].iloc[-1]),
+            "imd_1991_2020_climatology": (
+                float(df["imd_1991_2020_climatology_cumulative_mm"].iloc[-1])
+                if "imd_1991_2020_climatology_cumulative_mm" in df.columns
+                else None
+            ),
         },
         "created_utc": datetime.now(timezone.utc).isoformat(),
     }
