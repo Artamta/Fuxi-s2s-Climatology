@@ -1,0 +1,133 @@
+{
+  "schema_version": 3,
+  "run_label": "fuxi_s2s_june17_wind_daily_mean_strict00z_2026_ens50",
+  "calendar": "/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/daily_mean_strict00z_june17_wind/config/june17_dates.csv",
+  "years": [
+    2026
+  ],
+  "date_count": 1,
+  "cadence": "exact_june17_strict_information_matched",
+  "members": 50,
+  "member_generation": "official_onnx_native_stochastic_latent_prior_ensemble_no_external_perturbations",
+  "lead_days": 42,
+  "retained_variables": [
+    "u850",
+    "v850",
+    "tp"
+  ],
+  "temporal_alignment": {
+    "benchmark_mode": "strict_information_matched_00utc",
+    "strict_operational": true,
+    "issue_hour_utc": 0,
+    "input_day_offsets": [
+      -2,
+      -1
+    ],
+    "first_forecast_period_start_offset_days": 0,
+    "valid_time_role": "period_end",
+    "contract": "For issue date D at 00 UTC, use complete UTC daily means D-2 and D-1. FuXi lead 1 covers D 00 UTC through D+1 00 UTC."
+  },
+  "domain": {
+    "latitude_first": 39,
+    "latitude_last": 0,
+    "longitude_first": 60,
+    "longitude_last": 99,
+    "grid_degrees": 1.5,
+    "latitude_count": 27,
+    "longitude_count": 27
+  },
+  "input": {
+    "source": "daily-mean ERA5: final ERA5 for 2002-2021; preliminary ERA5T hourly ARCO reduced to UTC daily means for 2026",
+    "daily_statistic": "daily_mean",
+    "hourly_sampling": "1_hourly",
+    "time_zone": "utc+00:00",
+    "times": "two complete UTC daily means ending exactly at the 00 UTC issue time",
+    "staging_subdirectory": "era5-daily",
+    "staging_layout": "exact_june17_strict_inputs",
+    "staging_components": [
+      "pressure",
+      "surface"
+    ],
+    "pressure_dataset": "derived-era5-pressure-levels-daily-statistics",
+    "surface_dataset": "derived-era5-single-levels-daily-statistics",
+    "grid_degrees": 1.5,
+    "request_cost_limit": 400,
+    "pressure_days_per_request": 6,
+    "local_daily_arco": {
+      "zarr": "/storage/bedartha/public/datasets/as_downloaded/weatherbench2/era5-daily/1959-2023_01_10-full_37-1h-0p25deg-chunk-1-s2s.zarr",
+      "years": [
+        2002,
+        2003,
+        2004,
+        2005,
+        2006,
+        2007,
+        2008,
+        2009,
+        2010,
+        2011,
+        2012,
+        2013,
+        2014,
+        2015,
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021
+      ],
+      "source_grid_degrees": 0.25,
+      "target_stride": 6,
+      "surface_remote_arco_fields": [
+        "ttr",
+        "100u",
+        "100v"
+      ],
+      "validation_sample": "analysis-code/data-download/fuxi_s2s/FuXi-S2S/data/input.nc",
+      "validation_dates": [
+        "2020-06-01",
+        "2020-06-02"
+      ]
+    },
+    "remote_hourly_arco": {
+      "zarr": "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3",
+      "years": [
+        2026
+      ],
+      "source_grid_degrees": 0.25,
+      "target_stride": 6,
+      "workers": 12,
+      "authentication": "anonymous"
+    },
+    "shape": [
+      2,
+      76,
+      121,
+      240
+    ],
+    "retain_input_nc": true
+  },
+  "model": {
+    "repository": "analysis-code/data-download/fuxi_s2s/FuXi-S2S",
+    "repository_commit": "cfcc829",
+    "inference_script": "analysis-code/data-download/fuxi_s2s/FuXi-S2S/inference.py",
+    "inference_size_bytes": 5301,
+    "inference_sha256": "ade527b11b96664311add149318ca28054d3257da4f795173a6bda4a17fd36e1",
+    "onnx": "analysis-code/data-download/fuxi_s2s/FuXi-S2S/model/fuxi_s2s.onnx",
+    "onnx_size_bytes": 1588847,
+    "onnx_sha256": "bcc3419ef698cb894b17fae2c5e40ded05d87ed8d4ba9f6342c9f0afff3c70f5",
+    "external_data": "analysis-code/data-download/fuxi_s2s/FuXi-S2S/model/fuxi_s2s",
+    "external_data_size_bytes": 2078823204,
+    "external_data_sha256": "628d86076810d3d5c53a7a27f10e67b08051e2d2e5c9224a2df96cba8ecd8ea8",
+    "mask": "analysis-code/data-download/fuxi_s2s/FuXi-S2S/data/mask.nc",
+    "mask_size_bytes": 41140,
+    "mask_sha256": "252acc576bf32c47af244191c1a77cb7c750adfaaeeeaf1dfb70f0ecc07682ab"
+  },
+  "runtime": {
+    "driver_python": "/home/raj.ayush/.conda/envs/s2s-hind/bin/python",
+    "input_python": "/home/raj.ayush/.conda/envs/s2s-hind/bin/python",
+    "inference_python": "/home/raj.ayush/.conda/envs/fuxi_s2s/bin/python"
+  },
+  "storage_root": "/storage/raj.ayush/fuxi_s2s_Hindcast_outputs/daily_mean_strict00z_june17_wind"
+}
