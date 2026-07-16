@@ -20,7 +20,7 @@ DEFAULT_CSV = Path(
     "20260517_lead1_30_cumulative_timeseries.csv"
 )
 DEFAULT_OUTPUT = Path(
-    "outputs/may17_fuxi_ecmwf_arco/"
+    "outputs/cumulative_rainfall_fixed/"
     "20260517_lead1_30_fuxi_vs_era5gt_imd_climatology_cumulative_rainfall.png"
 )
 
