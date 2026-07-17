@@ -53,3 +53,34 @@ outputs/wind_rainfall_anomaly_20260617
 
 Generated forecasts, NetCDF files, figures, and logs remain outside Git. The
 run and plot manifests stored with those products preserve provenance.
+
+## Observed verification
+
+The observed comparison uses the three complete common verification weeks,
+18 June through 8 July 2026:
+
+- 850-hPa wind: ERA5/ERA5T UTC daily means from CDS.
+- Wind climatology: local WeatherBench2 ERA5 1990-2017 daily climatology.
+- Rainfall: IMERG Late V07C.
+- Rainfall climatology: IMERG Final V07B, 2001-2025.
+
+This source matching is deliberate: the observed wind anomaly is ERA5 minus
+ERA5 climatology, while the observed rainfall anomaly is IMERG minus IMERG
+climatology. The workflow does not subtract FuXi model climatology from an
+observational field.
+
+Run directly when CDS is responsive:
+
+```bash
+/home/raj.ayush/.conda/envs/fuxi/bin/python \
+  scripts/download_era5_wind850_gt.py --overwrite
+
+MPLCONFIGDIR=/tmp/mpl-observed-wind-rain \
+XDG_CACHE_HOME=/tmp/xdg-observed-wind-rain \
+/home/raj.ayush/.conda/envs/s2s-hind/bin/python \
+  scripts/plot_observed_weekly_wind_rainfall.py
+```
+
+For a long CDS queue, submit `slurm/make_observed_wind_rainfall.sbatch` with
+`CDS_JUNE_JOB_ID` set to the already accepted June request ID. Products are
+written to `outputs/wind_rainfall_ground_truth_20260617`.
